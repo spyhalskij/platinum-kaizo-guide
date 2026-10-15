@@ -6,7 +6,7 @@ const { a } = Astro.props; const b = import.meta.env.BASE_URL;
 const enc = Object.entries(a.enc); const sp=(a.special||[]).map(i=>spAll[i]);
 const groups=[['Gifts',['Gift']],['Static encounters',['Static']],['Trades',['Trade']],['Honey trees',['Honey tree']],['Eggs',['Egg']],['Other (Game Corner, contests, store)',['Game Corner','Contest reward','Dept. Store']]].map(([h,ts])=>[h,sp.filter(s=>ts.includes(s.type))]).filter(([,l])=>l.length);
 ---
-<Base title={`${a.name} encounters`}><p class="mut"><a href={`${b}encounters/`}>Encounters</a> › {a.name} · <a href={`${b}route/${a.slug}/`}>area hub</a>{a.trainers.length>0 && <> · <a href={`${b}trainers/${a.slug}/`}>{a.trainers.length} trainers</a></>}</p>
+<Base title={`${a.name} encounters`}><p class="mut"><a href={`${b}encounters/`}>Encounters</a> › {a.name} · <a href={`${b}route/${a.slug}/`}>area hub</a>{a.fights.length>0 && <> · <a href={`${b}trainers/${a.slug}/`}>{a.fights.length} trainer fights</a></>}</p>
 <h1>{a.name}: encounters</h1>
 <h2>Wild encounters</h2>
 {enc.length ? <div class="grid">{enc.map(([m,list]) => <div class="card"><h3>{m}</h3><table><thead><tr><th>Pokémon</th><th>Rate</th><th>Lv</th></tr></thead><tbody>

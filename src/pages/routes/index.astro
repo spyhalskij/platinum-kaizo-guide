@@ -3,6 +3,6 @@ import Base from '../../layouts/Base.astro'; import areas from '../../data/areas
 ---
 <Base title="Routes"><h1>Routes & areas</h1><p class="mut">Order follows the encounter sheet (story order); areas only present in trainer/item data follow.</p>
 <input id="f" placeholder="Filter areas…"><div class="wrap card"><table><thead><tr><th>Area</th><th>Encounters</th><th>Trainers</th><th>Items</th></tr></thead><tbody>
-{areas.map(a => <tr data-n={a.name.toLowerCase()}><td><a href={`${b}route/${a.slug}/`}>{a.name}</a></td><td>{Object.values(a.enc).flat().length || '—'}</td><td>{a.trainers.length || '—'}</td><td>{a.items.length || '—'}</td></tr>)}
+{areas.map(a => <tr data-n={a.name.toLowerCase()}><td><a href={`${b}route/${a.slug}/`}>{a.name}</a></td><td>{Object.values(a.enc).flat().length || '—'}</td><td>{a.fights.length || '—'}</td><td>{a.items.length || '—'}</td></tr>)}
 </tbody></table></div>
 <script is:inline>document.getElementById('f').oninput=e=>{const v=e.target.value.toLowerCase();document.querySelectorAll('tr[data-n]').forEach(r=>r.hidden=!r.dataset.n.includes(v))}</script></Base>

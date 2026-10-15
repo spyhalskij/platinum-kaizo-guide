@@ -66,7 +66,7 @@ trainers.forEach((t,i)=>{ t.id=i; t.slug=slug(t.split+'-'+t.name)+'-'+i; });
   const seq=[...trainers].sort((a,b)=>PROG.indexOf(a.split)-PROG.indexOf(b.split)||a.id-b.id);
   const STARTER=/\b(chimchar|piplup|turtwig)\b/i;
   const vbase=n=>key(n.replace(/\([^)]*(chose|selected|picked)[^)]*\)/ig,'').replace(/\[[^\]]*\]/g,''));
-  const partner=n=>(n.match(/MULTI BATTLE with\s+([^)]+)/i)||[])[1];
+  const partner=n=>(n.match(/MU(?:LT|TL)I BATTLE with\s+([^,)]+)/i)||[])[1];
   const lastWord=s=>key(clean(s).split(/\s+/).pop());
   const steps=[];
   for (const t of seq){ const prev=steps[steps.length-1]; const pt=prev&&prev.ids.length&&trainers[prev.ids[prev.ids.length-1]];
@@ -82,6 +82,30 @@ trainers.forEach((t,i)=>{ t.id=i; t.slug=slug(t.split+'-'+t.name)+'-'+i; });
   const pick=(t,st)=>{ const m=t.name.match(STARTER); let ids=st.ids; if(m&&st.kind==='variant'){ const f=ids.filter(id=>trainers[id].name.toLowerCase().includes(m[1].toLowerCase())); if(f.length) ids=f; } return {ids,kind:st.kind,optional:st.optional}; };
   for (const t of trainers){ const i=t.step; t.next=walk(i,1).map(st=>pick(t,st)); t.prev=walk(i,-1).map(st=>pick(t,st));
     const st=steps[i]; t.with=st.kind==='multi'?st.ids.filter(x=>x!==t.id):[]; t.alts=st.kind==='variant'?st.ids.filter(x=>x!==t.id):[]; }
+  // ---- Fights: a MULTI BATTLE pair = one fight; everything else = one fight per trainer entry
+  const cleanName=n=>clean(n
+    .replace(/([a-z])[fF](?=[A-Z][a-z])/g,'$1 ')            // sheet gender-tag glitch glued to the name: GalacticfVenus, CyclistFRachel, School KidfChristine
+    .replace(/\b(Galactic)f\s/g,'$1 ')                        // "Galacticf Venus"
+    .replace(/,?\s*MU(?:LT|TL)I BATTLE with\s+[^,)]+/ig,'')   // partner suffix (kept other notes in the brackets)
+    .replace(/\(\s*,\s*/g,'(').replace(/\(\s*\)/g,'').replace(/\s+\*/g,'*')
+    .replace(/\bDOUBLE BATTLE\b|\bDOUBLE\b(?! Team)/g,'double battle').replace(/\bDouble Battle\b/g,'double battle'));
+  trainers.forEach(t=>t.display=cleanName(t.name));
+  const fights=[]; const fightOf={};
+  steps.forEach((st,i)=>{ const mk=ids=>{ const ms=ids.map(id=>trainers[id]); const t0=ms[0];
+      const paren=n=>(n.match(/\(.*\)\*?$/)||[''])[0], bare=n=>clean(n.slice(0,n.length-paren(n).length));
+      const same=ms.length>1&&ms.every(m=>paren(m.display)===paren(t0.display));
+      const title=ms.length>1? (same? ms.map(m=>bare(m.display)).join(' + ')+(paren(t0.display)?' '+paren(t0.display):'') : ms.map(m=>m.display).join(' + '))+' (multi battle)' : t0.display;
+      const f={id:fights.length,slug:ms.length>1? slug(t0.split+'-'+ms.map(m=>m.display.replace(/\(.*?\)/g,'')).join('-')+'-multi')+'-'+t0.id : t0.slug,
+        title,kind:ms.length>1?'multi':'single',members:ids,area:t0.area,areaSlug:t0.areaSlug,split:t0.split,optional:st.optional,step:i};
+      fights.push(f); ids.forEach(id=>{fightOf[id]=f.id; trainers[id].fight=f.id;}); return f; };
+    if(st.kind==='multi') st.fids=[mk(st.ids).id]; else st.fids=st.ids.map(id=>mk([id]).id); });
+  const fwalk=(i,dir)=>{ const out=[]; for(let j=i+dir;j>=0&&j<steps.length;j+=dir){ out.push(steps[j]); if(!steps[j].optional) break; } return out; };
+  for (const f of fights){ const t0=trainers[f.members[0]]; const m=t0.name.match(STARTER);
+    const pickF=st=>{ let fids=st.fids; if(m&&st.kind==='variant'){ const g=fids.filter(fid=>trainers[fights[fid].members[0]].name.toLowerCase().includes(m[1].toLowerCase())); if(g.length) fids=g; } return {fights:fids,kind:st.kind,optional:st.optional}; };
+    f.next=fwalk(f.step,1).map(pickF); f.prev=fwalk(f.step,-1).map(pickF);
+    f.alts=steps[f.step].kind==='variant'?steps[f.step].fids.filter(x=>x!==f.id):[]; }
+  globalThis.FIGHTS=fights;
+  console.log('fights',fights.length,'multi fights',fights.filter(f=>f.kind==='multi').length,'MULTI-named trainers not paired',JSON.stringify(trainers.filter(t=>/MU(LT|TL)I/i.test(t.name)&&fights[t.fight].kind!=='multi').map(t=>t.name)));
   const multiNext=trainers.filter(t=>t.next.reduce((n,o)=>n+o.ids.length,0)>1).length;
   console.log('progression steps',steps.length,'trainers with >1 next option',multiNext,'kinds',JSON.stringify(steps.reduce((c,s)=>(c[s.kind]=(c[s.kind]||0)+1,c),{})),'optional steps',steps.filter(s=>s.optional).length);
 }
@@ -203,17 +227,19 @@ function addSp(o){ const alias={'wormadamp':'Wormadam'}; o.mons=(o.mons||[]).map
     for (const e of g){ const m=M(e.mon); m.locations=m.locations.filter(l=>l.slug!=='route-201'); } } }
 for (const s of special){ s.mons.forEach(x=>{const m=x.slug&&Object.values(mons).find(y=>y.slug===x.slug); if(m)(m.special??=[]).push(s.id);}); if(s.areaSlug)(areas[s.areaSlug].special??=[]).push(s.id); }
 
+for (const a of Object.values(areas)) a.fights=[...new Set(a.trainers.map(id=>trainers[id].fight))];
+for (const f of FIGHTS) f.areaSlug=trainers[f.members[0]].areaSlug;
 // ---- Search index
 const idx=[];
 Object.values(mons).forEach(m=>idx.push({t:'Mon',n:m.name,u:`mon/${m.slug}/`,d:m.types.join('/')}));
-order.forEach(s=>{const a=areas[s]; idx.push({t:'Route',n:a.name,u:`route/${a.slug}/`,d:`${Object.values(a.enc).flat().length} enc · ${a.trainers.length} trainers · ${a.items.length} items`});});
-trainers.forEach(t=>idx.push({t:'Trainer',n:t.name,u:`trainer/${t.slug}/`,d:`${t.area} · ${t.split} split`}));
+order.forEach(s=>{const a=areas[s]; idx.push({t:'Route',n:a.name,u:`route/${a.slug}/`,d:`${Object.values(a.enc).flat().length} enc · ${a.fights.length} trainer fights · ${a.items.length} items`});});
+FIGHTS.forEach(f=>idx.push({t:'Trainer',n:f.title,u:`trainer/${f.slug}/`,d:`${f.area} · ${f.split} split`+(f.kind==='multi'?' · '+f.members.map(id=>trainers[id].name).join(' / '):'')}));
 const seenI=new Set(); itemsU.forEach(i=>{ if(seenI.has(key(i.name)))return; seenI.add(key(i.name)); idx.push({t:i.category==='TM'||i.category==='HM'?'TM':'Item',n:i.name,u:`items/?q=${encodeURIComponent(i.name)}`,d:i.move?`${i.move.type??''} ${i.move.cat??''}`.trim():i.category}); });
 special.forEach(sp=>idx.push({t:'Special',n:`${sp.mons.map(m=>m.name).join(', ')||sp.name||sp.type}`,u:`special-encounters/?q=${encodeURIComponent(sp.type)}#sp-${sp.id}`,d:`${sp.type}${sp.location?' · '+sp.location:''}${sp.phase?' · '+sp.phase:''}`}));
-order.forEach(s=>{const a=areas[s]; const ne=Object.values(a.enc).flat().length+(a.special||[]).length; if(ne) idx.push({t:'Encounters',n:a.name+' encounters',u:`encounters/${a.slug}/`,d:`${ne} wild/special`}); if(a.trainers.length) idx.push({t:'Trainer',n:a.name+' trainers',u:`trainers/${a.slug}/`,d:`${a.trainers.length} trainers`});});
+order.forEach(s=>{const a=areas[s]; const ne=Object.values(a.enc).flat().length+(a.special||[]).length; if(ne) idx.push({t:'Encounters',n:a.name+' encounters',u:`encounters/${a.slug}/`,d:`${ne} wild/special`}); if(a.fights.length) idx.push({t:'Trainer',n:a.name+' trainers',u:`trainers/${a.slug}/`,d:`${a.fights.length} fights`});});
 gyms.forEach(g=>idx.push({t:'Gym',n:g.name,u:`gym/${g.slug}/`,d:`${g.fights.length} boss fights`}));
 
-write('mons',Object.values(mons).sort((a,b)=>a.id-b.id)); write('areas',order.map(s=>areas[s])); write('trainers',trainers);
+write('mons',Object.values(mons).sort((a,b)=>a.id-b.id)); write('areas',order.map(s=>areas[s])); write('trainers',trainers); write('fights',FIGHTS);
 write('items',itemsU); write('gyms',gyms); write('special',special); write('unparsed',unparsed); write('gymExtras',gymExtras); write('typechart',{types,chart,notes:typeNotes});
 fs.mkdirSync(new URL('../public/',import.meta.url).pathname,{recursive:true});
 fs.writeFileSync(new URL('../public/search-index.json',import.meta.url).pathname,JSON.stringify(idx));

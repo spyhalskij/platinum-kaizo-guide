@@ -1,15 +1,13 @@
 ---
-import trainers from '../data/trainers.json';
-const { t, compact = false } = Astro.props; const b = import.meta.env.BASE_URL;
-const L = id => trainers[id];
-const tag = o => o.kind==='variant' ? 'one of (starter/choice variants)' : o.kind==='multi' ? 'multi battle pair, fought together' : '';
-const row = (label, opts) => ({label, opts});
-const rows = [row('← Previous', t.prev), row('Next →', t.next)];
+import fights from '../data/fights.json';
+const { f, compact = false } = Astro.props; const b = import.meta.env.BASE_URL;
+const F = id => fights[id];
+const tag = o => o.kind==='variant' ? 'one of (starter/choice variants)' : o.kind==='multi' ? 'multi battle (one fight)' : '';
+const rows = [['← Previous', f.prev], ['Next →', f.next]];
 ---
-<div class="tnav" style={compact ? 'font-size:13px' : ''}>
-{rows.map(r => <div><b>{r.label}<a href="#order-note">†</a>:</b> {r.opts.length === 0 ? <span class="mut">{r.label.startsWith('Next') ? 'end of trainer list' : 'first trainer'}</span> :
-  r.opts.map((o,i) => <>{i>0 && <span class="mut"> or </span>}{o.ids.map((id,j)=><>{j>0 && <span class="mut">{o.kind==='multi' ? ' + ' : ' / '}</span>}<a href={`${b}trainer/${L(id).slug}/`}>{L(id).name}</a></>)}
-  <span class="mut">{[L(o.ids[0]).area !== t.area ? `(${L(o.ids[0]).area}${L(o.ids[0]).split !== t.split ? ', ' + L(o.ids[0]).split + ' split' : ''})` : '', tag(o), o.optional ? 'optional' : ''].filter(Boolean).map(x=>' · '+x).join('')}</span></>)}</div>)}
-{!compact && t.with.length > 0 && <div><b>Fought together with:</b> {t.with.map(id=><a href={`${b}trainer/${L(id).slug}/`}>{L(id).name}</a>)}</div>}
-{!compact && t.alts.length > 0 && <div><b>Alternative versions:</b> {t.alts.map((id,j)=><>{j>0 && ' · '}<a href={`${b}trainer/${L(id).slug}/`}>{L(id).name}</a></>)}</div>}
+<div class={compact ? 'tnav' : 'tnav top'}>
+{rows.map(([label, opts]) => <div><b>{label}<a href="#order-note">†</a>:</b> {opts.length === 0 ? <span class="mut">{label.startsWith('Next') ? 'end of trainer list' : 'first trainer'}</span> :
+  opts.map((o,i) => <>{i>0 && <span class="mut"> or </span>}{o.fights.map((id,j)=><>{j>0 && <span class="mut"> / </span>}<a href={`${b}trainer/${F(id).slug}/`}>{F(id).title}</a></>)}
+  <span class="mut">{[F(o.fights[0]).area !== f.area ? `(${F(o.fights[0]).area}${F(o.fights[0]).split !== f.split ? ', ' + F(o.fights[0]).split + ' split' : ''})` : '', tag(o), o.optional ? 'optional' : ''].filter(Boolean).map(x=>' · '+x).join('')}</span></>)}</div>)}
+{!compact && f.alts.length > 0 && <div><b>Alternative versions:</b> {f.alts.map((id,j)=><>{j>0 && ' · '}<a href={`${b}trainer/${F(id).slug}/`}>{F(id).title}</a></>)}</div>}
 </div>

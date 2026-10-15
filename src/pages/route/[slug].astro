@@ -7,7 +7,7 @@ const wild = Object.values(a.enc).flat().length, sp=(a.special||[]).length;
 <Base title={a.name}><h1>{a.name}</h1>
 <div class="grid">
 {(wild||sp) ? <a class="card" href={`${b}encounters/${a.slug}/`}><b>Encounters</b><div class="mut">{wild} wild slots ({Object.keys(a.enc).join(', ') || 'none'}){sp ? ` · ${sp} gift/static/trade/other` : ''}</div></a> : <div class="card"><b>Encounters</b><div class="mut">None in docs</div></div>}
-{a.trainers.length ? <a class="card" href={`${b}trainers/${a.slug}/`}><b>Trainers ({a.trainers.length})</b><div class="mut">Teams with actual Speed</div></a> : <div class="card"><b>Trainers</b><div class="mut">None in docs</div></div>}
+{a.fights.length ? <a class="card" href={`${b}trainers/${a.slug}/`}><b>Trainers ({a.fights.length} fights)</b><div class="mut">Teams with actual Speed</div></a> : <div class="card"><b>Trainers</b><div class="mut">None in docs</div></div>}
 </div>
 <h2>Items here ({a.items.length})</h2>
 {a.items.length ? <div class="wrap card"><table><thead><tr><th>Item</th><th>Where</th><th>Requires</th></tr></thead><tbody>{a.items.map(i=>items[i]).map(i=> <tr><td>{i.name}{i.qty && ` ×${i.qty}`}</td><td>{i.loc}</td><td>{i.req||'—'}</td></tr>)}</tbody></table></div> : <p class="mut">None in docs.</p>}
