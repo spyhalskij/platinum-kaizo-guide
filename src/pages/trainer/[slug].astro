@@ -4,11 +4,11 @@ import fights from '../../data/fights.json'; import trainers from '../../data/tr
 export function getStaticPaths(){
   const paths = fights.map(f=>({params:{slug:f.slug},props:{f,alias:false}}));
   // old per-trainer URLs of merged multi battles render the merged fight (canonical + redirect)
-  for (const f of fights) if (f.kind==='multi') for (const id of f.members) if (trainers[id].slug!==f.slug) paths.push({params:{slug:trainers[id].slug},props:{f,alias:true}});
+  for (const f of fights) if (f.kind!=='single') for (const id of f.members) if (trainers[id].slug!==f.slug) paths.push({params:{slug:trainers[id].slug},props:{f,alias:true}});
   return paths; }
 const { f, alias } = Astro.props; const b = import.meta.env.BASE_URL; const canon = `${b}trainer/${f.slug}/`;
 ---
 <Base title={f.title} canonical={canon} redirect={alias ? canon : null}><h1>{f.title}</h1>
-{alias && <p class="mut">This trainer is part of a multi battle, shown here as one fight. <a href={canon}>Go to the fight page</a>.</p>}
+{alias && <p class="mut">This trainer is part of a multi/double battle, shown here as one fight. <a href={canon}>Go to the fight page</a>.</p>}
 <div class="card"><TrainerNav f={f} /></div><Fight f={f} link={false} />
 <p><a href={`${b}trainers/${f.areaSlug}/`}>All trainers in {f.area}</a></p><OrderNote /><SpeedNote /></Base>

@@ -6,6 +6,6 @@ const ms = f.members.map(id => trainers[id]);
 ---
 {f.kind === 'single' ? <Trainer t={ms[0]} link={link} href={`${b}trainer/${f.slug}/`}>{nav && <TrainerNav f={f} compact />}</Trainer> :
 <div class="card"><h3>{link ? <a href={`${b}trainer/${f.slug}/`}>{f.title}</a> : f.title} <span class="mut" style="font-weight:400;font-size:13px">· {f.area} · {f.split} split</span></h3>
-<p class="mut" style="font-size:13px;margin:.2rem 0">One fight: both trainers battle you together. Each team is listed under its trainer (sheet names: {ms.map(m=>m.name).join(' / ')}).</p>
+<p class="mut" style="font-size:13px;margin:.2rem 0">{f.kind==='double' ? 'One double battle (two sheet entries merged by explicit override).' : 'One fight: both trainers battle you together.'} Each team is listed under its trainer (sheet names: {ms.map(m=>m.name).join(' / ')}).</p>
 {ms.map(m => <Trainer t={m} sub />)}
 {nav && <TrainerNav f={f} compact />}</div>}

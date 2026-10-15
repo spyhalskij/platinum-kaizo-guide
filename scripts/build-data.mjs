@@ -72,6 +72,9 @@ trainers.forEach((t,i)=>{ t.id=i; t.slug=slug(t.split+'-'+t.name)+'-'+i; });
   for (const t of seq){ const prev=steps[steps.length-1]; const pt=prev&&prev.ids.length&&trainers[prev.ids[prev.ids.length-1]];
     t.optional=/OPTIONAL/i.test(t.name);
     let join=null;
+    // Explicit override: confirmed by Jack (2026-10-15) that these two sheet entries are ONE double battle.
+    const DOUBLE_PAIRS=[['Galactic Squad Deimos (DOUBLE)','Galactic Squad Phobos (DOUBLE)']];
+    if(pt&&DOUBLE_PAIRS.some(([x,y])=>pt.name===x&&t.name===y)&&prev.ids.length===1) join='double';
     if(pt&&pt.split===t.split&&pt.area===t.area){
       if(vbase(pt.name)===vbase(t.name)&&vbase(t.name)!==key(t.name)) join='variant';
       else if(partner(pt.name)&&partner(t.name)&&(key(t.name).includes(lastWord(partner(pt.name)))||key(pt.name).includes(lastWord(partner(t.name))))&&prev.ids.length<2) join='multi'; }
@@ -94,11 +97,12 @@ trainers.forEach((t,i)=>{ t.id=i; t.slug=slug(t.split+'-'+t.name)+'-'+i; });
   steps.forEach((st,i)=>{ const mk=ids=>{ const ms=ids.map(id=>trainers[id]); const t0=ms[0];
       const paren=n=>(n.match(/\(.*\)\*?$/)||[''])[0], bare=n=>clean(n.slice(0,n.length-paren(n).length));
       const same=ms.length>1&&ms.every(m=>paren(m.display)===paren(t0.display));
-      const title=ms.length>1? (same? ms.map(m=>bare(m.display)).join(' + ')+(paren(t0.display)?' '+paren(t0.display):'') : ms.map(m=>m.display).join(' + '))+' (multi battle)' : t0.display;
-      const f={id:fights.length,slug:ms.length>1? slug(t0.split+'-'+ms.map(m=>m.display.replace(/\(.*?\)/g,'')).join('-')+'-multi')+'-'+t0.id : t0.slug,
-        title,kind:ms.length>1?'multi':'single',members:ids,area:t0.area,areaSlug:t0.areaSlug,split:t0.split,optional:st.optional,step:i};
+      const title=ms.length>1? (same? ms.map(m=>bare(m.display)).join(' + ')+(paren(t0.display)?' '+paren(t0.display):'') : ms.map(m=>m.display).join(' + '))+(st.kind==='double'?' (double battle)':' (multi battle)') : t0.display;
+      const title2=title.replace(/\(double battle\) \(double battle\)$/,'(double battle)');
+      const f={id:fights.length,slug:ms.length>1? slug(t0.split+'-'+ms.map(m=>m.display.replace(/\(.*?\)/g,'')).join('-')+'-'+st.kind)+'-'+t0.id : t0.slug,
+        title:title2,kind:ms.length>1?st.kind:'single',members:ids,area:t0.area,areaSlug:t0.areaSlug,split:t0.split,optional:st.optional,step:i};
       fights.push(f); ids.forEach(id=>{fightOf[id]=f.id; trainers[id].fight=f.id;}); return f; };
-    if(st.kind==='multi') st.fids=[mk(st.ids).id]; else st.fids=st.ids.map(id=>mk([id]).id); });
+    if(st.kind==='multi'||st.kind==='double') st.fids=[mk(st.ids).id]; else st.fids=st.ids.map(id=>mk([id]).id); });
   const fwalk=(i,dir)=>{ const out=[]; for(let j=i+dir;j>=0&&j<steps.length;j+=dir){ out.push(steps[j]); if(!steps[j].optional) break; } return out; };
   for (const f of fights){ const t0=trainers[f.members[0]]; const m=t0.name.match(STARTER);
     const pickF=st=>{ let fids=st.fids; if(m&&st.kind==='variant'){ const g=fids.filter(fid=>trainers[fights[fid].members[0]].name.toLowerCase().includes(m[1].toLowerCase())); if(g.length) fids=g; } return {fights:fids,kind:st.kind,optional:st.optional}; };

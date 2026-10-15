@@ -2,7 +2,7 @@
 import fights from '../data/fights.json';
 const { f, compact = false } = Astro.props; const b = import.meta.env.BASE_URL;
 const F = id => fights[id];
-const tag = o => o.kind==='variant' ? 'one of (starter/choice variants)' : o.kind==='multi' ? 'multi battle (one fight)' : '';
+const tag = o => o.kind==='variant' ? 'one of (starter/choice variants)' : o.kind==='multi' ? 'multi battle (one fight)' : o.kind==='double' ? 'double battle (one fight)' : '';
 const rows = [['← Previous', f.prev], ['Next →', f.next]];
 ---
 <div class={compact ? 'tnav' : 'tnav top'}>
