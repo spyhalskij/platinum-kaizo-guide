@@ -71,10 +71,23 @@ const spdStat=(base,iv,lv,mod)=>Math.floor((Math.floor((2*base+iv)*lv/100)+5)*mo
 const FORM={'wormadamsandy':'wormadam-s','wormadamtrash':'wormadam-t','deoxysspeed':'deoxys-s','deoxysdefense':'deoxys-d','deoxysattack':'deoxys-a','giratinaorigin':'giratina-o','shelloswest':'shellos','shelloseast':'shellos','burmysandy':'burmy','burmytrash':'burmy','burmyplant':'burmy','nidoranm':'nidoran','nidoranf':'NIDF'};
 const bySlug=Object.fromEntries(Object.values(mons).map(x=>[x.slug,x]));
 const nidF=Object.values(mons).find(x=>x.name==='Nidoran♀'); if(nidF) FORM.nidoranf=nidF.slug;
+// PKCalc trainer sets snapshot (data/pkcalc-trainer-sets.json from scripts/fetch-pkcalc-ivs.mjs): per-set IVs, EVs default 0
+const PK=JSON.parse(fs.readFileSync(new URL('../data/pkcalc-trainer-sets.json',import.meta.url),'utf8'));
+const PKF={nidoran:'nidoranm','wormadam-s':'wormadamsandy','wormadam-t':'wormadamtrash','deoxys-s':'deoxysspeed','deoxys-d':'deoxysdefense','deoxys-a':'deoxysattack','giratina-o':'giratinaorigin'};
+const STOP=new Set(['pokemon','trainer','player','chose','selected','picked','tag','partner','the']);
+const toks=s=>new Set((s||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(w=>w.length>1&&!STOP.has(w)));
+const pkBySp={}; for(const x of PK.sets)(pkBySp[key(x.species)]??=[]).push(x);
+function pkSet(t,p,lv){ const sp=PKF[p.slug]||key(bySlug[p.slug].name); const tt=toks(t.name); const nats=clean(p.nature).split('/').map(clean);
+  let c=(pkBySp[sp]||[]).filter(x=>x.level===lv).map(x=>({x,o:[...toks(x.trainer)].filter(w=>tt.has(w)).length,n:nats.includes(x.nature)})).filter(y=>y.o>0);
+  const best=Math.max(0,...c.map(y=>y.o*2+(y.n?1:0))); c=c.filter(y=>y.o*2+(y.n?1:0)===best);
+  const ivs=new Set(c.map(y=>y.x.ivs.sp+'/'+(y.x.evs?.sp??0))); return ivs.size===1?c[0].x:null; }
 for (const t of trainers) for (const p of t.team){ const lv=num((p.label.match(/Lv\.?\s*(\d+)/i)||[])[1]);
   if(!p.slug){ const nm=p.label.replace(/Lv\.?\s*\d+/i,'').replace(/[♂♀\/]/g,'').trim(); const f=FORM[key(nm)]; if(f&&bySlug[f]) p.slug=f; }
   const mon=p.slug&&bySlug[p.slug]; const base=mon&&num(mon.stats.Spe);
-  if(lv&&base!=null){ const {mods,known}=spdMods(p.nature); p.spe={min:spdStat(base,0,lv,Math.min(...mods)),max:spdStat(base,31,lv,Math.max(...mods)),lv,base,natureKnown:known}; } }
+  if(lv&&base!=null){ const {mods,known}=spdMods(p.nature); const set=pkSet(t,p,lv);
+    if(set){ const iv=set.ivs.sp, ev=set.evs?.sp??0; const f=(m)=>Math.floor((Math.floor((2*base+iv+Math.floor(ev/4))*lv/100)+5)*m);
+      p.spe={min:f(Math.min(...mods)),max:f(Math.max(...mods)),lv,base,iv,ev,natureKnown:known,src:'pkcalc',pkTrainer:set.trainer}; }
+    else p.spe={min:spdStat(base,0,lv,Math.min(...mods)),max:spdStat(base,31,lv,Math.max(...mods)),lv,base,natureKnown:known,src:'range'}; } }
 
 // ---- Items: checklist (location) + TMs + shards + heart scales + mastersheet (price/pocket)
 const master={}; const ms=csv('items-mastersheet.csv'); const MH=ms[0];
