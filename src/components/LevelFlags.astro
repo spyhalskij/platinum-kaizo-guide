@@ -1,11 +1,13 @@
 ---
-// Level cap (HoF rules, mechanics.md) + optional pChal level pacing (pchal-level-pacing.csv; renders nothing if absent).
+// Level cap (HoF rules, mechanics.md) + optional level pacing (pchal-level-pacing.csv; nothing if absent). No timestamps/URLs.
 import P from '../data/pchal.json';
 const { f = null, area = null } = Astro.props;
-const pace = ((f ? f.pacing : area?.pacing) || []).map(i => P.pacing[i]);
+const inherited = !!(f && !f.pacing && f.pacingArea);
+const pace = ((f ? (f.pacing || f.pacingArea) : area?.pacing) || []).map(i => P.pacing[i]);
 const rng = r => r.min != null && r.max != null && r.min !== r.max ? `${r.min}–${r.max}` : `${r.min ?? r.max}`;
+const label = area ? 'Recommended team level on this route' : inherited ? 'Recommended level (area)' : 'Recommended level';
 ---
 {(f?.cap || pace.length > 0) && <div class="lvflags">
 {f?.cap && <span class="capflag" title="Hall of Fame rules (mechanics.md): enter fights at or under the cap">{f.cap.label}: Lv {f.cap.level}</span>}
-{pace.map(r => <span class="paceflag">{area ? 'Recommended team level on this route' : 'Recommended level'}: {rng(r)} <span class={`conf conf-${r.confidence}`}>{r.confidence === 'low' ? 'LOW confidence' : r.confidence}</span>{r.basis && <span class="mut"> · {r.basis}</span>}</span>)}
+{pace.map(r => <span class={inherited ? 'paceflag inherited' : 'paceflag'} title={inherited ? `Inherited from the route range for ${r.name}; no fight-specific data` : ''}>{label}: {rng(r)} <span class={`conf conf-${r.confidence}`}>{r.confidence === 'low' ? 'LOW confidence' : r.confidence}</span>{inherited && <span class="mut"> · inherited from route ({r.name})</span>}{r.basis && <span class="mut"> · {r.basis}</span>}{r.source && <span class="credit"> · via {r.source}</span>}</span>)}
 </div>}

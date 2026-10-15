@@ -318,12 +318,12 @@ const PCH={}; {
   // Optional level pacing file (pchal-level-pacing.csv). Absent -> nothing rendered.
   PCH.pacing=[]; const pacingFile=path.join(REF,'data','pchal-level-pacing.csv');
   if(fs.existsSync(pacingFile)){ for(const [i,r] of rows('pchal-level-pacing.csv').entries()){
-      const o={id:i,kind:(r.kind||'').toLowerCase(),name:r.name,location:r.location,min:num(r.rec_level_min),max:num(r.rec_level_max),basis:r.basis,confidence:(r.confidence||'').toLowerCase()||'unrated',fights:[],areas:[]};
+      const o={id:i,kind:(r.kind||'').toLowerCase(),name:r.name,location:r.location,min:num(r.rec_level_min),max:num(r.rec_level_max),basis:r.basis,confidence:(r.confidence||'').toLowerCase()||'unrated',source:clean(r.source||'').replace(/https?:\S+/g,'').trim(),fights:[],areas:[]};
       if(o.kind==='route'){ o.areas=matchAreas(r.name); if(!o.areas.length&&r.location) o.areas=matchAreas(r.location); }
       else if(o.kind==='trainer'){ const nk=key(r.name); const lk=r.location&&slug(r.location); let bm;
         if((bm=r.name.match(/^Barry #(\d+) \(all starter variants\)/i))) o.fights=FIGHTS.filter(f=>f.members.some(id=>new RegExp('^Barry #'+bm[1]+'\\b').test(trainers[id].name))).map(f=>f.id);
         else if(/^Elite Four \/ Mt\. Coronet$/i.test(r.name)) o.fights=FIGHTS.filter(f=>f.split==='Galactic'||f.split==='Elite Four').map(f=>f.id);
-        else { const exact=FIGHTS.filter(f=>f.members.some(id=>trainers[id].name===r.name)); 
+        else { let exact=FIGHTS.filter(f=>f.members.some(id=>trainers[id].name===r.name)); if(exact.length>1&&r.location){ const ex2=exact.filter(f=>key(f.area)===key(r.location)||f.areaSlug===slug(r.location.replace(/\*/g,''))); if(ex2.length) exact=ex2; } 
           o.fights=(exact.length?exact:FIGHTS.filter(f=>(key(f.title).includes(nk)||f.members.some(id=>key(trainers[id].name).includes(nk)))&&(!lk||f.areaSlug===lk||key(f.area).includes(key(r.location))))).map(f=>f.id); } }
       // official caps duplicated in this file: don't render, just check against mechanics.md caps
       o.isCap=/^level cap$/i.test(clean(r.basis));
@@ -331,6 +331,10 @@ const PCH={}; {
       else { for(const s of o.areas) (areas[s].pacing??=[]).push(i); for(const fid of o.fights) (FIGHTS[fid].pacing??=[]).push(i); }
       if(!o.areas.length&&!o.fights.length) unmatched.pacing=(unmatched.pacing||[]).concat(`${r.kind} ${r.name} @ ${r.location}`);
       PCH.pacing.push(o); } }
+  // fights without a direct pacing row inherit their area's route range (marked as inherited)
+  { let direct=0,inh=0,capOnly=0,none=0; for(const f of FIGHTS){ const ap=areas[f.areaSlug]?.pacing; if(!f.pacing&&ap) f.pacingArea=ap;
+      if(f.pacing) direct++; else if(f.pacingArea) inh++; else if(f.cap) capOnly++; else none++; }
+    console.log('pacing coverage: direct',direct,'inherited',inh,'cap only',capOnly,'nothing',none,'of',FIGHTS.length); }
   PCH.matchups=mrows; PCH.groups=Object.entries(groups).map(([g,rs])=>({trainer:rs[0].trainer,location:rs[0].location,rows:rs.map(r=>r.id),fights:rs[0].fights,slug:slug(g)}));
   PCH.meta={processed,total:vids.length};
   PCH.unmatched=unmatched;
