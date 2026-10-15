@@ -1,0 +1,14 @@
+---
+import Base from '../../layouts/Base.astro'; import Special from '../../components/Special.astro'; import sp from '../../data/special.json';
+const types=[...new Set(sp.map(s=>s.type))];
+---
+<Base title="Special encounters"><h1>Gifts, statics, trades, eggs, honey trees & more ({sp.length})</h1>
+<p class="mut">From encounters-nonwild.csv and encounters-universal.csv. Route 201 starters come from the encounter sheet.</p>
+<div class="row"><input id="q" placeholder="Search Pokémon, location, requirement…"><select id="t"><option value="">All types</option>{types.map(t=><option>{t} ({sp.filter(s=>s.type===t).length})</option>)}</select></div>
+<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">{sp.map(s=><Special s={s} />)}</div>
+<script is:inline>
+const q=document.getElementById('q'),t=document.getElementById('t'),c=[...document.querySelectorAll('.sp')];const p=new URLSearchParams(location.search).get('q');
+if(p){const o=[...t.options].find(o=>o.text.startsWith(p+' ('));if(o)t.value=o.value}
+function f(){const tv=t.value.replace(/ \(\d+\)$/,''),w=q.value.toLowerCase().split(/\s+/).filter(Boolean);c.forEach(x=>x.hidden=!((!tv||x.dataset.t===tv)&&w.every(k=>x.dataset.s.includes(k))))}
+q.oninput=f;t.onchange=f;f();if(location.hash)document.querySelector(location.hash)?.scrollIntoView();
+</script></Base>

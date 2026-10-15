@@ -4,7 +4,7 @@ import Base from '../layouts/Base.astro'; import gyms from '../data/gyms.json'; 
 <Base title="Search">
 <h1>Platinum Kaizo run companion</h1>
 <input id="q" placeholder="Search Pokémon, routes, trainers, items, TMs, gyms…  (press / to focus)" autocomplete="off" autofocus>
-<div class="row" style="margin-top:.5rem" id="filters">{['All','Mon','Route','Trainer','Gym','Item','TM'].map(t=> <label style="flex:0 0 auto"><input type="radio" name="t" value={t} checked={t==='All'} style="width:auto"> {t}</label>)}</div>
+<div class="row" style="margin-top:.5rem" id="filters">{['All','Mon','Route','Trainer','Gym','Special','Item','TM'].map(t=> <label style="flex:0 0 auto"><input type="radio" name="t" value={t} checked={t==='All'} style="width:auto"> {t}</label>)}</div>
 <div id="results" class="card" style="padding:0;display:none"></div>
 <h2>Quick links</h2>
 <div class="grid">{gyms.map(g => <a class="card" href={`${b}gym/${g.slug}/`}><b>{g.order}. {g.name}</b><div class="mut">{g.fights.length} boss fight(s)</div></a>)}</div>
@@ -12,6 +12,7 @@ import Base from '../layouts/Base.astro'; import gyms from '../data/gyms.json'; 
 <a class="card" href={`${b}routes/`}><b>Routes & areas</b><div class="mut">Encounters, trainers, items by area</div></a>
 <a class="card" href={`${b}items/`}><b>Items & TMs</b><div class="mut">Every pickup with location</div></a>
 <a class="card" href={`${b}types/`}><b>Gen 4 type chart</b><div class="mut">No Fairy. Filter by attack/defense</div></a>
+<a class="card" href={`${b}special-encounters/`}><b>Special encounters</b><div class="mut">Gifts, statics, trades, eggs, honey trees</div></a>
 <a class="card" href={`${b}mons/`}><b>Pokémon</b><div class="mut">Kaizo stats, learnsets, locations</div></a></div>
 <script is:inline define:vars={{b}}>
 let idx=[];const q=document.getElementById('q'),out=document.getElementById('results');

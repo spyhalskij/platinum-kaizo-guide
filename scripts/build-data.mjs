@@ -101,16 +101,67 @@ for (const line of md('type-chart.md').split('\n')){ let m;
   if(at&&(m=line.match(/^(SE|NVE|Immune):\s*(.+)/))){ const v={SE:2,NVE:0.5,Immune:0}[m[1]]; m[2].split(',').map(x=>x.replace(/\*/g,'').trim()).filter(x=>types.includes(x)).forEach(d=>chart[at][d]=v); } }
 const typeNotes=md('type-chart.md').split('## Common coach traps')[1]||'';
 
+// ---- Special encounters (gifts, trades, eggs, statics, honey trees, game corner, contest, dept store)
+// Hand-mapped to the real layout of encounters-nonwild.csv / encounters-universal.csv (multi-line cells).
+const special=[]; const unparsed=[];
+const lines = s => (s??'').split('\n').map(clean).filter(Boolean);
+const blocks = s => (s??'').split(/\n\s*\n/).map(clean).filter(Boolean);
+const one = s => clean((s??'').replace(/\n/g,' '));
+function addSp(o){ const alias={'wormadamp':'Wormadam'}; o.mons=(o.mons||[]).map(n=>{const m=M(alias[key(n)]||n); return {name:alias[key(n)]?n:(m?m.name:n), slug:m?.slug}});
+  const a = o.location && (areas[slug(o.location)] || areas[slug(o.location.replace(/^The /,''))]); o.areaSlug=a?.slug;
+  o.id=special.length; special.push(o); }
+{ const r=csv('encounters-nonwild.csv');
+  // Trades: cols 0-1. Location rows 2,4,6,8,(10 blank). Entry rows +1: "Nick\n(Species)\nNature\nAbility" / requirement = what you give
+  for (const [lr,er] of [[2,3],[4,5],[6,7],[8,9],[10,11]]) { const raw=r[er][0]; const L=lines(raw); const sp=(L[1]||'').match(/^\((.+)\)$/);
+    if(sp && M(sp[1])) addSp({type:'Trade',location:one(r[lr][0]),mons:[sp[1]],nickname:L[0],nature:L[2]||'',ability:L[3]||'',give:one(r[er][1])||'',req:''});
+    else { addSp({type:'Trade',location:one(r[lr][0]),mons:[],nickname:one(raw),nature:'',ability:'',give:one(r[er][1]),req:'',note:'Species not stated in docs (raw cell shown as nickname)'}); unparsed.push({sheet:'encounters-nonwild.csv',where:`trades row ${er+1}`,raw:one(raw),why:'species slot holds "(Justice)", not a Pokémon; location and give cells empty. Kept as a partial trade entry'}); } }
+  // Gifts: cols 3-4. Location rows 2,4,6,8,10, entry row +1: "Name\nLv N" / choices
+  for (const [lr,er] of [[2,3],[4,5],[6,7],[8,9],[10,11]]) { const L=lines(r[er][3]); const lv=(L.find(x=>/^Lv/i.test(x))||'').replace(/^Lv\s*/i,'');
+    const ms=lines(r[er][4]); const known=ms.filter(M); const notMon=ms.filter(x=>!M(x));
+    addSp({type:'Gift',location:one(r[lr][3]),name:L.filter(x=>!/^Lv/i.test(x)).join(' '),level:lv,mons:known.length?known:[],choice:known.length>1,
+      note:notMon.length?`Options listed: ${notMon.join(', ')}${known.length?'':' (species not named in docs)'}`:''}); }
+  // Eggs: cols 6-11; givers row 2, locations row 4, mons row 5, requirements row 11
+  for (let c=6;c<=11;c++){ addSp({type:'Egg',giver:one(r[2][c]),location:one(r[4][c]),mons:lines(r[5][c]),req:one(r[11][c])==='None'?'':one(r[11][c]),choice:false,note:'One egg, species from this pool'}); }
+  // Game Corner (Veilstone): rows 13-18, header pairs at cols 0 & 3; prizes in cols 0-1 / 3-4 of next row
+  for (const hr of [13,15,17]) for (const c of [0,3]) { const tier=one(r[hr][c]); if(!tier) continue;
+    addSp({type:'Game Corner',location:'Veilstone City',mons:[...lines(r[hr+1][c]),...lines(r[hr+1][c+1])],req:`Tier listed under “${tier}”`,note:'Prize Pokémon; docs list them under this progress header'}); }
+  // Contest Hall rewards: cats row 13, mons row 15, moves row 16 (cols 6-10); requirement col 11 rows 15-16
+  const creq=[one(r[15][11]),one(r[16][11])].filter(Boolean).join(' · ');
+  for (let c=6;c<=10;c++) addSp({type:'Contest reward',location:'Hearthome City',contest:one(r[13][c]),mons:[one(r[15][c])],moves:lines(r[16][c]),req:creq});
+}
+{ const r=csv('encounters-universal.csv');
+  const ph=['Global','Early','Mid','Late']; ph.forEach((p,c)=>addSp({type:'Honey tree',location:'',phase:p,mons:lines(r[2][c]),note:`${p} pool (any honey tree)`}));
+  for (const [lr,mr] of [[4,5],[6,7]]) for (let c=0;c<4;c++) if(one(r[lr][c])) addSp({type:'Honey tree',location:one(r[lr][c]),phase:'Special tree',mons:lines(r[mr][c]),note:'Special honey tree'});
+  const P=blocks(r[2][5]), Q=blocks(r[2][6]), Lc=blocks(r[2][7]);
+  if(!(P.length===Q.length&&Q.length===Lc.length)) unparsed.push({sheet:'encounters-universal.csv',where:'statics',raw:`${P.length}/${Q.length}/${Lc.length}`,why:'column lengths differ'});
+  P.forEach((p,i)=>{ const m=p.match(/^(.+?)\s*-\s*Lv\s*(\d+)/i); if(!m||!M(m[1])){unparsed.push({sheet:'encounters-universal.csv',where:'statics',raw:p,why:'no "Name - Lv N"'});return;}
+    addSp({type:'Static',location:Lc[i]||'',mons:[m[1]],level:m[2],req:Q[i]||''}); });
+  // Dept store: "31% Ekans 25" lines; non-Pokémon lines (items) kept as note
+  const ds=lines(r[4][5]); const head=ds.filter(x=>!/^[.\d]+%/.test(x)).join(' ');
+  const odds=ds.filter(x=>/^[.\d]+%/.test(x)).map(x=>{const m=x.match(/^([.\d]+%)\s+(.+?)(?:\s+(\d+))?\s*!?$/);return m&&{rate:m[1],what:m[2].trim(),lvl:m[3]||''}}).filter(Boolean);
+  const dm=odds.filter(o=>M(o.what)), di=odds.filter(o=>!M(o.what));
+  addSp({type:'Dept. Store',location:'Veilstone City',mons:dm.map(o=>o.what),odds:dm,req:head.replace(/:$/,''),note:di.length?'Also: '+di.map(o=>`${o.rate} ${o.what}`).join(', '):''});
+  if(!one(r[3][6])===false && !lines(r[4][6]).length) unparsed.push({sheet:'encounters-universal.csv',where:'"Rock Smash" header (col G)',raw:'(empty)',why:'header with no data under it'});
+}
+// Route 201 starters: encounter sheet lists Chimchar/Piplup/Turtwig at Lv5 with no rate -> starter choice
+{ const a=areas['route-201']; const g=(a?.enc.Grass||[]).filter(e=>!e.rate);
+  if(g.length){ addSp({type:'Gift',location:'Route 201',name:'Starter (choose one)',level:g[0].lvl,mons:g.map(e=>e.mon),choice:true,note:'Listed in the encounter sheet with no encounter rate'});
+    a.enc.Grass=a.enc.Grass.filter(e=>e.rate); if(!a.enc.Grass.length) delete a.enc.Grass;
+    for (const e of g){ const m=M(e.mon); m.locations=m.locations.filter(l=>l.slug!=='route-201'); } } }
+for (const s of special){ s.mons.forEach(x=>{const m=x.slug&&Object.values(mons).find(y=>y.slug===x.slug); if(m)(m.special??=[]).push(s.id);}); if(s.areaSlug)(areas[s.areaSlug].special??=[]).push(s.id); }
+
 // ---- Search index
 const idx=[];
 Object.values(mons).forEach(m=>idx.push({t:'Mon',n:m.name,u:`mon/${m.slug}/`,d:m.types.join('/')}));
 order.forEach(s=>{const a=areas[s]; idx.push({t:'Route',n:a.name,u:`route/${a.slug}/`,d:`${Object.values(a.enc).flat().length} enc · ${a.trainers.length} trainers · ${a.items.length} items`});});
 trainers.forEach(t=>idx.push({t:'Trainer',n:t.name,u:`trainer/${t.slug}/`,d:`${t.area} · ${t.split} split`}));
 const seenI=new Set(); itemsU.forEach(i=>{ if(seenI.has(key(i.name)))return; seenI.add(key(i.name)); idx.push({t:i.category==='TM'||i.category==='HM'?'TM':'Item',n:i.name,u:`items/?q=${encodeURIComponent(i.name)}`,d:i.move?`${i.move.type??''} ${i.move.cat??''}`.trim():i.category}); });
+special.forEach(sp=>idx.push({t:'Special',n:`${sp.mons.map(m=>m.name).join(', ')||sp.name||sp.type}`,u:`special-encounters/?q=${encodeURIComponent(sp.type)}#sp-${sp.id}`,d:`${sp.type}${sp.location?' · '+sp.location:''}${sp.phase?' · '+sp.phase:''}`}));
 gyms.forEach(g=>idx.push({t:'Gym',n:g.name,u:`gym/${g.slug}/`,d:`${g.fights.length} boss fights`}));
 
 write('mons',Object.values(mons).sort((a,b)=>a.id-b.id)); write('areas',order.map(s=>areas[s])); write('trainers',trainers);
-write('items',itemsU); write('gyms',gyms); write('gymExtras',gymExtras); write('typechart',{types,chart,notes:typeNotes});
+write('items',itemsU); write('gyms',gyms); write('special',special); write('unparsed',unparsed); write('gymExtras',gymExtras); write('typechart',{types,chart,notes:typeNotes});
 fs.mkdirSync(new URL('../public/',import.meta.url).pathname,{recursive:true});
 fs.writeFileSync(new URL('../public/search-index.json',import.meta.url).pathname,JSON.stringify(idx));
+const ct={};special.forEach(x=>ct[x.type]=(ct[x.type]||0)+1);console.log('special',JSON.stringify(ct),'unparsed',JSON.stringify(unparsed));
 console.log('mons',Object.keys(mons).length,'areas',order.length,'trainers',trainers.length,'items',itemsU.length,'gyms',gyms.map(g=>g.name+':'+g.fights.length).join(','),'index',idx.length);

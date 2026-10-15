@@ -1,0 +1,1 @@
+[{"sheet":"encounters-nonwild.csv","where":"trades row 12","raw":"# (Justice) For Hippo","why":"species slot holds \"(Justice)\", not a Pokémon; location and give cells empty. Kept as a partial trade entry"},{"sheet":"encounters-universal.csv","where":"\"Rock Smash\" header (col G)","raw":"(empty)","why":"header with no data under it"}]

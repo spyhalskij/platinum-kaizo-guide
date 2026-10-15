@@ -1,7 +1,8 @@
 ---
-import Base from '../../layouts/Base.astro'; import mons from '../../data/mons.json'; import tc from '../../data/typechart.json';
+import Base from '../../layouts/Base.astro'; import mons from '../../data/mons.json'; import tc from '../../data/typechart.json'; import spAll from '../../data/special.json'; import Special from '../../components/Special.astro';
 export function getStaticPaths(){ return mons.map(m=>({params:{slug:m.slug},props:{m}})); }
 const { m } = Astro.props; const b = import.meta.env.BASE_URL;
+const sp = (m.special||[]).map(i=>spAll[i]);
 const f = s => String(s).replace(/\.0$/,'');
 const weak = tc.types.map(a=>[a, m.types.reduce((x,d)=>x*(tc.chart[a]?.[d] ?? 1),1)]).filter(([,v])=>v!==1).sort((x,y)=>y[1]-x[1]);
 ---
@@ -15,7 +16,8 @@ const weak = tc.types.map(a=>[a, m.types.reduce((x,d)=>x*(tc.chart[a]?.[d] ?? 1)
 {m.evoFrom.map(e=><div>From <a href={`${b}mon/${e.fromSlug}/`}>{e.from}</a>: {e.method}{e.req && ` (${e.req})`}</div>)}
 {m.evo.map(e=><div>→ {e.toSlug?<a href={`${b}mon/${e.toSlug}/`}>{e.to}</a>:e.to}: {e.method}{e.req && ` (${e.req})`}</div>)}
 {!m.evo.length && !m.evoFrom.length && <span class="mut">No evolution in docs.</span>}</div></div>
-<h2>Catch locations</h2>{m.locations.length ? <div class="card"><table><thead><tr><th>Area</th><th>Method</th></tr></thead><tbody>{m.locations.map(l=><tr><td><a href={`${b}route/${l.slug}/`}>{l.area}</a></td><td>{l.method}</td></tr>)}</tbody></table></div> : <p class="mut">No wild location in the encounter sheet (may be gift/trade/static; see docs).</p>}
+<h2>Catch locations</h2>{m.locations.length ? <div class="card"><table><thead><tr><th>Area</th><th>Method</th></tr></thead><tbody>{m.locations.map(l=><tr><td><a href={`${b}route/${l.slug}/`}>{l.area}</a></td><td>{l.method}</td></tr>)}</tbody></table></div> : <p class="mut">{sp.length ? 'No wild location in the encounter sheet. See other ways to get it below.' : 'Not in docs (no wild, gift, static, trade, egg or honey entry).'}</p>}
+{sp.length > 0 && <><h2>Other ways to get</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">{sp.map(s=><Special s={s} />)}</div></>}
 <div class="grid"><div class="card"><h3>Level-up learnset</h3>{m.levelUp.length? <table><tbody>{m.levelUp.map(([l,mv])=><tr><td>{l}</td><td>{mv}</td></tr>)}</tbody></table>:<span class="mut">not in docs</span>}</div>
 <div class="card"><h3>TM / HM compatibility ({m.tms.length})</h3>{m.tms.length? <table><tbody>{m.tms.map(([c,mv])=><tr><td>{c}</td><td>{mv}</td></tr>)}</tbody></table>:<span class="mut">not in docs</span>}</div></div>
 </Base>

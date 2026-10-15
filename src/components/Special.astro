@@ -1,0 +1,13 @@
+---
+const { s, hideLoc = false } = Astro.props; const b = import.meta.env.BASE_URL;
+const locText = s.location || (s.type==='Honey tree' ? 'Any honey tree' : 'Location not in docs');
+const facts = [
+  s.name && ['Gift', s.name], s.giver && ['From', s.giver], s.phase && ['Pool', s.phase], s.contest && ['Contest', s.contest],
+  s.level && ['Level', s.level], s.nickname && ['Nickname', s.nickname], s.nature && ['Nature', s.nature], s.ability && ['Ability', s.ability],
+  s.type==='Trade' && ['You give', s.give || 'not in docs'], s.moves?.length && ['Moves', s.moves.join(' / ')],
+  s.req && ['Requirement', s.req], s.choice && ['Choice', 'Pick one of the listed Pokémon'], s.note && ['Note', s.note]].filter(Boolean);
+---
+<div class="card sp" id={`sp-${s.id}`} data-t={s.type} data-s={[s.type,s.location,s.name,s.giver,s.req,s.note,...s.mons.map(m=>m.name)].join(' ').toLowerCase()}>
+<div><span class="tag">{s.type}</span>{!hideLoc && <b> {s.areaSlug ? <a href={`${b}route/${s.areaSlug}/`}>{locText}</a> : locText}</b>}</div>
+<div style="margin:.3rem 0">{s.mons.length ? s.mons.map((m,i)=><>{i>0 && ', '}{m.slug ? <a href={`${b}mon/${m.slug}/`}>{m.name}</a> : m.name}{s.odds && ` (${s.odds[i].rate}${s.odds[i].lvl ? ', Lv '+s.odds[i].lvl : ''})`}</>) : <span class="mut">Species not in docs</span>}</div>
+<div class="mut" style="font-size:13px">{facts.map(([k,v])=><div><b>{k}:</b> {v}</div>)}</div></div>
