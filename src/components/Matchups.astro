@@ -6,7 +6,7 @@ const rows = ids.map(i => P.matchups[i]);
 ---
 {rows.length > 0 && <div class="matchups"><h4>Known good matchups <span class="mut" style="font-weight:400;font-size:12px">(pChal, partial<a href="#pnote">‡</a>)</span></h4>
 <ul>{rows.map(r => <li><span class={`conf conf-${r.confidence}`}>{r.confidence === 'low' ? 'LOW confidence' : r.confidence}</span> <b>vs {r.oppLink ? <a href={`${b}mon/${r.oppLink}/`}>{r.opp}</a> : r.opp}</b>
-{r.oppNote && <span class="mut"> ({r.oppNote})</span>}{r.onTeam === false && <span class="flag"> not on this team in the trainer sheet</span>}{r.sp === null && <span class="flag"> species not named in source</span>}
+{r.oppLevel && <> Lv{r.oppLevel}</>}{r.sheetLevels && <span class="lvflag" title={`Trainer sheet lists Lv ${r.sheetLevels.join('/')} for this mon`}> (sheet: Lv{r.sheetLevels.join('/')})</span>}{r.oppNote && <span class="mut"> ({r.oppNote})</span>}{r.onTeam === false && <span class="flag"> not on this team in the trainer sheet</span>}{r.sp === null && <span class="flag"> species not named in source</span>}
 {r.oppMoves && <span class="mut"> · {r.oppMoves}</span>}
 <div>Answer: <Rich s={r.answer} />{r.why.length > 0 && <span class="mut"> · <Rich s={r.why} /></span>}</div>
 {r.avoid.length > 0 && <div class="mut">Avoid: <Rich s={r.avoid} /></div>}</li>)}</ul></div>}

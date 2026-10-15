@@ -270,17 +270,24 @@ const PCH={}; {
   const baseSp=l=>key(clean(l.replace(/Lv\.?\s*\d+/i,'').replace(/[♂♀]/g,'')).split(/[-\s(]/)[0]);
   const teamSp=f=>new Set(f.members.flatMap(id=>trainers[id].team.map(m=>baseSp(m.label))));
   const oppSp=o=>{ const m=clean(o.replace(/\(.*?\)/g,'')); return m&&M(m)?key(M(m).name).replace(/[^a-z0-9]/g,''):null; };
-  const kw=t=>/clown/i.test(t)?'Clown':/gym trainer/i.test(t)?'':t.split(' ')[0];
+  const kw=t=>/clown/i.test(t)?'Clown':/gym trainer|grunt/i.test(t)?'':t.split(' ')[0];
   const mrows=rows('pchal-matchups.csv').map((r,i)=>({id:i,trainer:r.trainer,location:r.location,opp:r.opp_mon,oppLevel:r.opp_level,oppMoves:r.opp_moves_items,answer:linkify(r.answer_mon),why:linkify(r.why),avoid:linkify(r.avoid),confidence:(r.confidence||'').toLowerCase()||'unrated',video:vid(r.video_url,r.timestamp),sp:oppSp(r.opp_mon)}));
-  // Explicit override: per Jack (2026-10-15), Mars's mon in this row is Gabite; the pChal caption said "Gible". Source CSV left unchanged.
-  const MATCHUP_OPP_FIX=[{trainer:'Mars',location:'Valley Windworks',from:'Gible',to:'Gabite',note:'Source caption said “Gible”; corrected to Gabite per Jack'}];
-  for (const fx of MATCHUP_OPP_FIX){ const r=mrows.find(r=>r.trainer===fx.trainer&&r.location===fx.location&&r.opp===fx.from); if(!r) throw new Error('MATCHUP_OPP_FIX not matched: '+fx.from);
+  // Explicit override list (applied only if the source row still has the old value; no-op once the source is fixed).
+  // Mars Gible -> Gabite (per Jack) is now fixed in the source CSV itself (pass 2), so the list is empty.
+  const MATCHUP_OPP_FIX=[];
+  for (const fx of MATCHUP_OPP_FIX){ const r=mrows.find(r=>r.trainer===fx.trainer&&r.location===fx.location&&r.opp===fx.from); if(!r){ console.log('MATCHUP_OPP_FIX no longer needed:',fx.from); continue; }
     r.opp=fx.to; r.sp=oppSp(fx.to); r.oppNote=fx.note; }
   mrows.forEach(r=>{ const m=M(clean(r.opp.replace(/\(.*?\)/g,''))); r.oppLink=m?m.slug:null; });
   const groups={}; mrows.forEach(r=>(groups[r.trainer+'|'+r.location.split(' (')[0]]??=[]).push(r));
   const GYMAREA=l=>{ const m=l.match(/^(\w+) Gym/); return m?m[1]:null; };
   for(const [g,rs] of Object.entries(groups)){ const r0=rs[0]; const k=kw(r0.trainer), ga=GYMAREA(r0.location), loc=r0.location.split(' (')[0];
     let cand=FIGHTS.filter(f=>(!k||f.members.some(id=>trainers[id].name.includes(k)))&&(!ga||f.area.startsWith(ga+' Gym'))&&(ga||!areas[slug(loc)]||f.areaSlug===slug(loc)||!FIGHTS.some(x=>x.areaSlug===slug(loc)&&x.members.some(id=>trainers[id].name.includes(k)))));
+    if(!k){ // generic trainers (gym trainers, tag grunts): match each row on its own by species within the location
+      const pool=cand.filter(f=>ga||f.areaSlug===slug(loc));
+      for(const r of rs){ const bf=r.sp?pool.filter(f=>teamSp(f).has(r.sp)):[]; r.fights=bf.map(f=>f.id); r.onTeam=bf.length?true:null;
+        if(!bf.length) unmatched.matchups.push(`${r.trainer} @ ${r.location}: ${r.opp} (no fight matched)`);
+        for(const fid of r.fights) (FIGHTS[fid].pchal??=[]).push(r.id); }
+      continue; }
     const sc=f=>{ const ts=teamSp(f); return rs.filter(r=>r.sp&&ts.has(r.sp)).length; };
     const best=Math.max(0,...cand.map(sc)); const bf=best>0?cand.filter(f=>sc(f)===best):[];
     for(const r of rs){ r.fights=bf.map(f=>f.id); r.onTeam=r.sp?bf.every(f=>teamSp(f).has(r.sp)):null;
@@ -288,6 +295,17 @@ const PCH={}; {
       else if(r.sp===null) unmatched.names.push(`${r.trainer}: opponent "${r.opp}" is not a species name; attached to the group's fight`);
       else if(!r.onTeam) unmatched.names.push(`${r.trainer}: ${r.opp} is not on the matched team in the trainer sheet`);
       for(const fid of r.fights) (FIGHTS[fid].pchal??=[]).push(r.id); } }
+  // when a row matched several fights and gives a level, keep only fights where that species has that level (if any do)
+  const lvOf=(fid,sp)=>FIGHTS[fid].members.flatMap(id=>trainers[id].team.filter(m=>baseSp(m.label)===sp).map(m=>num((m.label.match(/Lv\.?\s*(\d+)/i)||[])[1])));
+  for(const r of mrows){ const L=num(r.oppLevel); if(L==null||!r.sp||r.fights.length<2) continue; const keep=r.fights.filter(fid=>lvOf(fid,r.sp).includes(L));
+    if(keep.length&&keep.length<r.fights.length){ for(const fid of r.fights) if(!keep.includes(fid)) FIGHTS[fid].pchal=FIGHTS[fid].pchal.filter(x=>x!==r.id); r.fights=keep; } }
+  for(const f of FIGHTS) if(f.pchal&&!f.pchal.length) delete f.pchal;
+  // opponent level vs trainer sheet level (same species on the matched team)
+  const conflicts=[];
+  for(const r of mrows){ r.oppLevelN=num(r.oppLevel); if(r.oppLevelN==null||!r.sp||!r.fights.length) continue;
+    const lv=[...new Set(r.fights.flatMap(fid=>FIGHTS[fid].members.flatMap(id=>trainers[id].team.filter(m=>baseSp(m.label)===r.sp).map(m=>num((m.label.match(/Lv\.?\s*(\d+)/i)||[])[1])))).filter(x=>x!=null))];
+    if(lv.length&&!lv.includes(r.oppLevelN)){ r.sheetLevels=lv; conflicts.push(`${r.trainer}: ${r.opp} Lv${r.oppLevel} (sheet: Lv${lv.join('/')})`); } }
+  unmatched.levelConflicts=conflicts;
   PCH.matchups=mrows; PCH.groups=Object.entries(groups).map(([g,rs])=>({trainer:rs[0].trainer,location:rs[0].location,rows:rs.map(r=>r.id),fights:rs[0].fights,slug:slug(g)}));
   PCH.meta={processed,total:vids.length};
   PCH.unmatched=unmatched;
