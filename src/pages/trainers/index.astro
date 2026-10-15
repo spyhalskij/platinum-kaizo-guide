@@ -1,0 +1,9 @@
+---
+import Base from '../../layouts/Base.astro'; import areas from '../../data/areas.json'; import trainers from '../../data/trainers.json'; const b = import.meta.env.BASE_URL;
+const list = areas.filter(a=>a.trainers.length);
+---
+<Base title="Trainers"><h1>Trainers</h1><p class="mut">{trainers.length} trainers grouped by area (story order). Filter by trainer, area, split or Pokémon. Each team shows actual Speed.</p>
+<input id="f" placeholder="Filter trainers, areas, splits, Pokémon…">
+{list.map(a => <section class="card" data-area={a.name.toLowerCase()}><h3 style="margin-top:0"><a href={`${b}trainers/${a.slug}/`}>{a.name}</a> <span class="mut" style="font-weight:400">({a.trainers.length})</span></h3>
+<table><tbody>{a.trainers.map(id=>trainers[id]).map(t => <tr data-n={`${t.name} ${t.split} ${t.team.map(m=>m.label).join(' ')}`.toLowerCase()}><td><a href={`${b}trainer/${t.slug}/`}>{t.name}</a></td><td class="mut">{t.split} split</td><td class="mut" style="font-size:13px">{t.team.map(m=>m.label).join(', ')}</td></tr>)}</tbody></table></section>)}
+<script is:inline>document.getElementById('f').oninput=e=>{const v=e.target.value.toLowerCase();document.querySelectorAll('section[data-area]').forEach(s=>{const am=s.dataset.area.includes(v);let any=false;s.querySelectorAll('tr[data-n]').forEach(r=>{const m=am||r.dataset.n.includes(v);r.hidden=!m;any=any||m});s.hidden=!any})}</script></Base>

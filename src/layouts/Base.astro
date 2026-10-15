@@ -3,5 +3,5 @@ const { title } = Astro.props; const full = (title ? title + ' · ' : '') + 'Pla
 ---
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{full}</title><link rel="stylesheet" href={`${b}style.css`}></head>
-<body><header><nav><a class="brand" href={b}>Platinum Kaizo</a><a href={`${b}routes/`}>Routes</a><a href={`${b}gyms/`}>Gyms</a><a href={`${b}mons/`}>Pokémon</a><a href={`${b}special-encounters/`}>Special</a><a href={`${b}items/`}>Items &amp; TMs</a><a href={`${b}types/`}>Type chart</a></nav></header>
+<body><header><nav><a class="brand" href={b}>Platinum Kaizo</a><a href={`${b}encounters/`}>Encounters</a><a href={`${b}trainers/`}>Trainers</a><a href={`${b}routes/`}>Routes</a><a href={`${b}gyms/`}>Gyms</a><a href={`${b}mons/`}>Pokémon</a><a href={`${b}special-encounters/`}>Special</a><a href={`${b}items/`}>Items &amp; TMs</a><a href={`${b}types/`}>Type chart</a></nav></header>
 <main><slot /></main><footer>Draft companion built only from the local Platinum Kaizo reference docs. Docs browser, not a coach. Re-check sets in your calc. Missing fields are shown as “not in docs”.</footer></body></html>

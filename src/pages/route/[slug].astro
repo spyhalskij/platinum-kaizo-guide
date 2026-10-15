@@ -1,19 +1,14 @@
 ---
-import Base from '../../layouts/Base.astro'; import Trainer from '../../components/Trainer.astro';
-import areas from '../../data/areas.json'; import trainers from '../../data/trainers.json'; import items from '../../data/items.json'; import spAll from '../../data/special.json'; import Special from '../../components/Special.astro';
+import Base from '../../layouts/Base.astro'; import areas from '../../data/areas.json'; import items from '../../data/items.json';
 export function getStaticPaths(){ return areas.map(a=>({params:{slug:a.slug},props:{a}})); }
 const { a } = Astro.props; const b = import.meta.env.BASE_URL;
-const enc = Object.entries(a.enc); const sp=(a.special||[]).map(i=>spAll[i]);
-const groups=[['Gifts',['Gift']],['Static encounters',['Static']],['Trades',['Trade']],['Honey trees',['Honey tree']],['Eggs',['Egg']],['Other (Game Corner, contests, store)',['Game Corner','Contest reward','Dept. Store']]].map(([h,ts])=>[h,sp.filter(s=>ts.includes(s.type))]).filter(([,l])=>l.length);
+const wild = Object.values(a.enc).flat().length, sp=(a.special||[]).length;
 ---
 <Base title={a.name}><h1>{a.name}</h1>
-<h2>Wild encounters</h2>
-{enc.length ? <div class="grid">{enc.map(([m,list]) => <div class="card"><h3>{m}</h3><table><thead><tr><th>Pokémon</th><th>Rate</th><th>Lv</th></tr></thead><tbody>
-{list.map(e=> <tr><td>{e.slug?<a href={`${b}mon/${e.slug}/`}>{e.mon}</a>:e.mon}</td><td>{e.rate || <span class="mut">not in docs</span>}</td><td>{e.lvl}</td></tr>)}</tbody></table></div>)}</div>
-: <p class="mut">No wild encounters for this area in docs.</p>}
-{groups.map(([h,l])=><><h2>{h} ({l.length})</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">{l.map(s=><Special s={s} hideLoc />)}</div></>)}
+<div class="grid">
+{(wild||sp) ? <a class="card" href={`${b}encounters/${a.slug}/`}><b>Encounters</b><div class="mut">{wild} wild slots ({Object.keys(a.enc).join(', ') || 'none'}){sp ? ` · ${sp} gift/static/trade/other` : ''}</div></a> : <div class="card"><b>Encounters</b><div class="mut">None in docs</div></div>}
+{a.trainers.length ? <a class="card" href={`${b}trainers/${a.slug}/`}><b>Trainers ({a.trainers.length})</b><div class="mut">Teams with actual Speed</div></a> : <div class="card"><b>Trainers</b><div class="mut">None in docs</div></div>}
+</div>
 <h2>Items here ({a.items.length})</h2>
 {a.items.length ? <div class="wrap card"><table><thead><tr><th>Item</th><th>Where</th><th>Requires</th></tr></thead><tbody>{a.items.map(i=>items[i]).map(i=> <tr><td>{i.name}{i.qty && ` ×${i.qty}`}</td><td>{i.loc}</td><td>{i.req||'—'}</td></tr>)}</tbody></table></div> : <p class="mut">None in docs.</p>}
-<h2>Trainers ({a.trainers.length})</h2>
-{a.trainers.length ? a.trainers.map(id => <Trainer t={trainers[id]} />) : <p class="mut">None in docs.</p>}
 </Base>

@@ -18,3 +18,4 @@ input,select{background:#0b0d11;color:var(--fg);border:1px solid var(--line);bor
 .md table{margin:.5rem 0}.md p,.md li{color:#d4d8e0}
 footer{max-width:1100px;margin:2rem auto;padding:1rem;color:var(--mut);font-size:13px;border-top:1px solid var(--line)}
 @media(max-width:600px){nav{font-size:14px}main{padding:.6rem}}
+.spe{font-size:13px;margin:.15rem 0}.spe b{color:#ffd479}

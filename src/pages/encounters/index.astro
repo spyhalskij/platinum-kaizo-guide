@@ -1,0 +1,9 @@
+---
+import Base from '../../layouts/Base.astro'; import areas from '../../data/areas.json'; const b = import.meta.env.BASE_URL;
+const list = areas.map(a=>({a, wild:Object.values(a.enc).flat().length, sp:(a.special||[]).length})).filter(x=>x.wild||x.sp);
+---
+<Base title="Encounters"><h1>Encounters</h1><p class="mut">Wild encounters by method plus gifts, statics, trades and honey trees, per area. Story order from the encounter sheet. Trainers are on the <a href={`${b}trainers/`}>Trainers</a> page.</p>
+<input id="f" placeholder="Filter areas or Pokémon…"><div class="wrap card"><table><thead><tr><th>Area</th><th>Methods</th><th>Wild slots</th><th>Gifts / statics / trades / other</th></tr></thead><tbody>
+{list.map(({a,wild,sp}) => <tr data-n={(a.name+' '+Object.values(a.enc).flat().map(e=>e.mon).join(' ')).toLowerCase()}><td><a href={`${b}encounters/${a.slug}/`}>{a.name}</a></td><td>{Object.keys(a.enc).join(', ') || '—'}</td><td>{wild || '—'}</td><td>{sp || '—'}</td></tr>)}
+</tbody></table></div>
+<script is:inline>document.getElementById('f').oninput=e=>{const v=e.target.value.toLowerCase();document.querySelectorAll('tr[data-n]').forEach(r=>r.hidden=!r.dataset.n.includes(v))}</script></Base>

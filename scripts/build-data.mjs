@@ -60,7 +60,21 @@ for (const sp of splits){ let area='',cur=null,mon=null; const split=title(sp===
     else if(cur && line.trim() && !line.startsWith('_') && !line.startsWith('#') && cur.team.length===0 && !line.startsWith('-')) cur.note=(cur.note?cur.note+' ':'')+clean(line);
   } }
 trainers.forEach((t,i)=>{ t.id=i; t.slug=slug(t.split+'-'+t.name)+'-'+i; });
-const baseArea=n=>clean(n.replace(/\(.*?\)/g,'').replace(/\*/g,'').replace(/ - Requires.*$/,'')); for (const t of trainers){ const a=areas[slug(baseArea(t.area))] ?? route(baseArea(t.area)); a.trainers.push(t.id); }
+const baseArea=n=>clean(n.replace(/\(.*?\)/g,'').replace(/\*/g,'').replace(/ - Requires.*$/,'')); for (const t of trainers){ const a=areas[slug(baseArea(t.area))] ?? route(baseArea(t.area)); a.trainers.push(t.id); t.areaSlug=a.slug; }
+
+// ---- Actual in-battle Speed for trainer Pokémon (Gen 4 formula, EV 0, IV range 0-31: trainer IV rule not documented)
+const NAT={Lonely:[1,0],Brave:[1,4],Adamant:[1,2],Naughty:[1,3],Bold:[0,1],Relaxed:[4,1],Impish:[2,1],Lax:[3,1],Timid:[4,0],Hasty:[4,1],Jolly:[4,2],Naive:[4,3],Modest:[2,0],Mild:[2,1],Quiet:[2,4],Rash:[2,3],Calm:[3,0],Gentle:[3,1],Sassy:[3,4],Careful:[3,2]};
+// index: 0 Atk,1 Def,2 SpA,3 SpD,4 Spe -> [up,down]
+const spdMods=n=>{ const ns=clean(n).split('/').map(clean).filter(Boolean); const ok=ns.filter(x=>NAT[x]||['Hardy','Docile','Serious','Bashful','Quirky'].includes(x));
+  if(!ns.length||ok.length!==ns.length) return {mods:[0.9,1.1],known:false}; return {mods:ok.map(x=>{const e=NAT[x]; return !e?1:e[0]===4?1.1:e[1]===4?0.9:1;}),known:true}; };
+const spdStat=(base,iv,lv,mod)=>Math.floor((Math.floor((2*base+iv)*lv/100)+5)*mod);
+const FORM={'wormadamsandy':'wormadam-s','wormadamtrash':'wormadam-t','deoxysspeed':'deoxys-s','deoxysdefense':'deoxys-d','deoxysattack':'deoxys-a','giratinaorigin':'giratina-o','shelloswest':'shellos','shelloseast':'shellos','burmysandy':'burmy','burmytrash':'burmy','burmyplant':'burmy','nidoranm':'nidoran','nidoranf':'NIDF'};
+const bySlug=Object.fromEntries(Object.values(mons).map(x=>[x.slug,x]));
+const nidF=Object.values(mons).find(x=>x.name==='Nidoran♀'); if(nidF) FORM.nidoranf=nidF.slug;
+for (const t of trainers) for (const p of t.team){ const lv=num((p.label.match(/Lv\.?\s*(\d+)/i)||[])[1]);
+  if(!p.slug){ const nm=p.label.replace(/Lv\.?\s*\d+/i,'').replace(/[♂♀\/]/g,'').trim(); const f=FORM[key(nm)]; if(f&&bySlug[f]) p.slug=f; }
+  const mon=p.slug&&bySlug[p.slug]; const base=mon&&num(mon.stats.Spe);
+  if(lv&&base!=null){ const {mods,known}=spdMods(p.nature); p.spe={min:spdStat(base,0,lv,Math.min(...mods)),max:spdStat(base,31,lv,Math.max(...mods)),lv,base,natureKnown:known}; } }
 
 // ---- Items: checklist (location) + TMs + shards + heart scales + mastersheet (price/pocket)
 const master={}; const ms=csv('items-mastersheet.csv'); const MH=ms[0];
@@ -158,6 +172,7 @@ order.forEach(s=>{const a=areas[s]; idx.push({t:'Route',n:a.name,u:`route/${a.sl
 trainers.forEach(t=>idx.push({t:'Trainer',n:t.name,u:`trainer/${t.slug}/`,d:`${t.area} · ${t.split} split`}));
 const seenI=new Set(); itemsU.forEach(i=>{ if(seenI.has(key(i.name)))return; seenI.add(key(i.name)); idx.push({t:i.category==='TM'||i.category==='HM'?'TM':'Item',n:i.name,u:`items/?q=${encodeURIComponent(i.name)}`,d:i.move?`${i.move.type??''} ${i.move.cat??''}`.trim():i.category}); });
 special.forEach(sp=>idx.push({t:'Special',n:`${sp.mons.map(m=>m.name).join(', ')||sp.name||sp.type}`,u:`special-encounters/?q=${encodeURIComponent(sp.type)}#sp-${sp.id}`,d:`${sp.type}${sp.location?' · '+sp.location:''}${sp.phase?' · '+sp.phase:''}`}));
+order.forEach(s=>{const a=areas[s]; const ne=Object.values(a.enc).flat().length+(a.special||[]).length; if(ne) idx.push({t:'Encounters',n:a.name+' encounters',u:`encounters/${a.slug}/`,d:`${ne} wild/special`}); if(a.trainers.length) idx.push({t:'Trainer',n:a.name+' trainers',u:`trainers/${a.slug}/`,d:`${a.trainers.length} trainers`});});
 gyms.forEach(g=>idx.push({t:'Gym',n:g.name,u:`gym/${g.slug}/`,d:`${g.fights.length} boss fights`}));
 
 write('mons',Object.values(mons).sort((a,b)=>a.id-b.id)); write('areas',order.map(s=>areas[s])); write('trainers',trainers);

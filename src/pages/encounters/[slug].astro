@@ -1,0 +1,16 @@
+---
+import Base from '../../layouts/Base.astro'; import Special from '../../components/Special.astro';
+import areas from '../../data/areas.json'; import spAll from '../../data/special.json';
+export function getStaticPaths(){ return areas.filter(a=>Object.keys(a.enc).length||(a.special||[]).length).map(a=>({params:{slug:a.slug},props:{a}})); }
+const { a } = Astro.props; const b = import.meta.env.BASE_URL;
+const enc = Object.entries(a.enc); const sp=(a.special||[]).map(i=>spAll[i]);
+const groups=[['Gifts',['Gift']],['Static encounters',['Static']],['Trades',['Trade']],['Honey trees',['Honey tree']],['Eggs',['Egg']],['Other (Game Corner, contests, store)',['Game Corner','Contest reward','Dept. Store']]].map(([h,ts])=>[h,sp.filter(s=>ts.includes(s.type))]).filter(([,l])=>l.length);
+---
+<Base title={`${a.name} encounters`}><p class="mut"><a href={`${b}encounters/`}>Encounters</a> › {a.name} · <a href={`${b}route/${a.slug}/`}>area hub</a>{a.trainers.length>0 && <> · <a href={`${b}trainers/${a.slug}/`}>{a.trainers.length} trainers</a></>}</p>
+<h1>{a.name}: encounters</h1>
+<h2>Wild encounters</h2>
+{enc.length ? <div class="grid">{enc.map(([m,list]) => <div class="card"><h3>{m}</h3><table><thead><tr><th>Pokémon</th><th>Rate</th><th>Lv</th></tr></thead><tbody>
+{list.map(e=> <tr><td>{e.slug?<a href={`${b}mon/${e.slug}/`}>{e.mon}</a>:e.mon}</td><td>{e.rate || <span class="mut">not in docs</span>}</td><td>{e.lvl}</td></tr>)}</tbody></table></div>)}</div>
+: <p class="mut">No wild encounters for this area in docs.</p>}
+{groups.map(([h,l])=><><h2>{h} ({l.length})</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">{l.map(s=><Special s={s} hideLoc />)}</div></>)}
+</Base>
