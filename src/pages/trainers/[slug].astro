@@ -1,10 +1,10 @@
 ---
-import Base from '../../layouts/Base.astro'; import Trainer from '../../components/Trainer.astro'; import SpeedNote from '../../components/SpeedNote.astro';
+import Base from '../../layouts/Base.astro'; import Trainer from '../../components/Trainer.astro'; import OrderNote from '../../components/OrderNote.astro'; import SpeedNote from '../../components/SpeedNote.astro';
 import areas from '../../data/areas.json'; import trainers from '../../data/trainers.json';
 export function getStaticPaths(){ return areas.filter(a=>a.trainers.length).map(a=>({params:{slug:a.slug},props:{a}})); }
 const { a } = Astro.props; const b = import.meta.env.BASE_URL; const enc = Object.keys(a.enc).length||(a.special||[]).length;
 ---
 <Base title={`${a.name} trainers`}><p class="mut"><a href={`${b}trainers/`}>Trainers</a> › {a.name} · <a href={`${b}route/${a.slug}/`}>area hub</a>{enc>0 && <> · <a href={`${b}encounters/${a.slug}/`}>encounters</a></>}</p>
 <h1>{a.name}: trainers ({a.trainers.length})</h1>
-{a.trainers.map(id => <Trainer t={trainers[id]} />)}
-<SpeedNote /></Base>
+{a.trainers.map(id => <Trainer t={trainers[id]} nav />)}
+<OrderNote /><SpeedNote /></Base>

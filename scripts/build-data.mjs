@@ -60,6 +60,31 @@ for (const sp of splits){ let area='',cur=null,mon=null; const split=title(sp===
     else if(cur && line.trim() && !line.startsWith('_') && !line.startsWith('#') && cur.team.length===0 && !line.startsWith('-')) cur.note=(cur.note?cur.note+' ':'')+clean(line);
   } }
 trainers.forEach((t,i)=>{ t.id=i; t.slug=slug(t.split+'-'+t.name)+'-'+i; });
+// ---- Progression order (prev/next). Split order = walkthrough-index.md story beats (Candice + Galactic arc before Volkner);
+// within a split = area/trainer order of the split sheet (trainers/<split>.md, parsed from the mastersheet tabs).
+{ const PROG=['roark','gardenia','fantina','maylene','wake','byron','candice','galactic','volkner','elitefour'].map(x=>title(x==='elitefour'?'Elite Four':x));
+  const seq=[...trainers].sort((a,b)=>PROG.indexOf(a.split)-PROG.indexOf(b.split)||a.id-b.id);
+  const STARTER=/\b(chimchar|piplup|turtwig)\b/i;
+  const vbase=n=>key(n.replace(/\([^)]*(chose|selected|picked)[^)]*\)/ig,'').replace(/\[[^\]]*\]/g,''));
+  const partner=n=>(n.match(/MULTI BATTLE with\s+([^)]+)/i)||[])[1];
+  const lastWord=s=>key(clean(s).split(/\s+/).pop());
+  const steps=[];
+  for (const t of seq){ const prev=steps[steps.length-1]; const pt=prev&&prev.ids.length&&trainers[prev.ids[prev.ids.length-1]];
+    t.optional=/OPTIONAL/i.test(t.name);
+    let join=null;
+    if(pt&&pt.split===t.split&&pt.area===t.area){
+      if(vbase(pt.name)===vbase(t.name)&&vbase(t.name)!==key(t.name)) join='variant';
+      else if(partner(pt.name)&&partner(t.name)&&(key(t.name).includes(lastWord(partner(pt.name)))||key(pt.name).includes(lastWord(partner(t.name))))&&prev.ids.length<2) join='multi'; }
+    if(join&&(prev.kind==='single'||prev.kind===join)){ prev.ids.push(t.id); prev.kind=join; prev.optional=prev.optional&&t.optional; }
+    else steps.push({ids:[t.id],kind:'single',optional:t.optional}); }
+  steps.forEach((st,i)=>st.ids.forEach(id=>trainers[id].step=i));
+  const walk=(i,dir)=>{ const out=[]; for(let j=i+dir;j>=0&&j<steps.length;j+=dir){ out.push(steps[j]); if(!steps[j].optional) break; } return out; };
+  const pick=(t,st)=>{ const m=t.name.match(STARTER); let ids=st.ids; if(m&&st.kind==='variant'){ const f=ids.filter(id=>trainers[id].name.toLowerCase().includes(m[1].toLowerCase())); if(f.length) ids=f; } return {ids,kind:st.kind,optional:st.optional}; };
+  for (const t of trainers){ const i=t.step; t.next=walk(i,1).map(st=>pick(t,st)); t.prev=walk(i,-1).map(st=>pick(t,st));
+    const st=steps[i]; t.with=st.kind==='multi'?st.ids.filter(x=>x!==t.id):[]; t.alts=st.kind==='variant'?st.ids.filter(x=>x!==t.id):[]; }
+  const multiNext=trainers.filter(t=>t.next.reduce((n,o)=>n+o.ids.length,0)>1).length;
+  console.log('progression steps',steps.length,'trainers with >1 next option',multiNext,'kinds',JSON.stringify(steps.reduce((c,s)=>(c[s.kind]=(c[s.kind]||0)+1,c),{})),'optional steps',steps.filter(s=>s.optional).length);
+}
 const baseArea=n=>clean(n.replace(/\(.*?\)/g,'').replace(/\*/g,'').replace(/ - Requires.*$/,'')); for (const t of trainers){ const a=areas[slug(baseArea(t.area))] ?? route(baseArea(t.area)); a.trainers.push(t.id); t.areaSlug=a.slug; }
 
 // ---- Actual in-battle Speed for trainer Pokémon (Gen 4 formula, EV 0, IV range 0-31: trainer IV rule not documented)
