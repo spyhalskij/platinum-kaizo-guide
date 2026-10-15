@@ -21,3 +21,4 @@ footer{max-width:1100px;margin:2rem auto;padding:1rem;color:var(--mut);font-size
 .spe{font-size:13px;margin:.15rem 0}.spe b{color:#ffd479}
 .tnav{border-top:1px solid var(--line);margin-top:.5rem;padding-top:.4rem;font-size:14px}.tnav div{margin:.15rem 0}
 .tnav.top{border-top:0;margin-top:0;padding-top:0}.subteam{border-top:1px solid var(--line);margin-top:.6rem;padding-top:.3rem}.subteam h4{margin:.3rem 0}
+.note{font-size:13px;background:#1d2230;border-left:3px solid var(--acc);padding:.3rem .6rem;margin:.3rem 0}

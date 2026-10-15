@@ -108,6 +108,10 @@ trainers.forEach((t,i)=>{ t.id=i; t.slug=slug(t.split+'-'+t.name)+'-'+i; });
     const pickF=st=>{ let fids=st.fids; if(m&&st.kind==='variant'){ const g=fids.filter(fid=>trainers[fights[fid].members[0]].name.toLowerCase().includes(m[1].toLowerCase())); if(g.length) fids=g; } return {fights:fids,kind:st.kind,optional:st.optional}; };
     f.next=fwalk(f.step,1).map(pickF); f.prev=fwalk(f.step,-1).map(pickF);
     f.alts=steps[f.step].kind==='variant'?steps[f.step].fids.filter(x=>x!==f.id):[]; }
+  // Explicit override: per Jack (2026-10-15), these separate fights CAN also be fought together as a double battle (not in docs).
+  const OPTIONAL_DOUBLE=[['GalacticfSquad Phobos (DOUBLE BATTLE)','GalacticfSquad Deimos (OPTIONAL DOUBLE BATTLE)']];
+  for (const [x,y] of OPTIONAL_DOUBLE){ const fx=fights.find(f=>f.kind==='single'&&trainers[f.members[0]].name===x), fy=fights.find(f=>f.kind==='single'&&trainers[f.members[0]].name===y);
+    if(!fx||!fy) throw new Error('OPTIONAL_DOUBLE override not matched: '+x+' / '+y); fx.alsoDouble=fy.id; fy.alsoDouble=fx.id; }
   globalThis.FIGHTS=fights;
   console.log('fights',fights.length,'multi fights',fights.filter(f=>f.kind==='multi').length,'MULTI-named trainers not paired',JSON.stringify(trainers.filter(t=>/MU(LT|TL)I/i.test(t.name)&&fights[t.fight].kind!=='multi').map(t=>t.name)));
   const multiNext=trainers.filter(t=>t.next.reduce((n,o)=>n+o.ids.length,0)>1).length;
