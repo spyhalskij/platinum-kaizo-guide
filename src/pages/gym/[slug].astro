@@ -8,7 +8,7 @@ const leadF = [...new Set(g.fights.map(id=>trainers[id].fight))];
 const gauntlet = fights.filter(f=>gymAreas.includes(f.area) && !leadF.includes(f.id));
 ---
 <Base title={g.name}><h1>{g.name}</h1>
-<p class="mut">Split: {g.split}. Area(s): {gymAreas.join(', ') || 'not in docs'}</p>
+{g.cap != null && <p><span class="capflag">Level cap: Lv {g.cap}</span> <span class="mut" style="font-size:12px">(Hall of Fame rules: highest level on the leader's party; enter every fight in the split at or under it)</span></p>}<p class="mut">Split: {g.split}. Area(s): {gymAreas.join(', ') || 'not in docs'}</p>
 <h2>Curated answers</h2>
 {g.answers.length ? g.answers.map(s => <div class="card md" set:html={marked.parse(s)} />) : <p class="mut">No curated gym answers for this fight in docs. Use the team below.</p>}
 <h2>Leader team</h2>{leadF.map(id => <Fight f={fights[id]} />)}

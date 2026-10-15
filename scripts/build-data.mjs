@@ -237,6 +237,14 @@ for (const s of special){ s.mons.forEach(x=>{const m=x.slug&&Object.values(mons)
 
 for (const a of Object.values(areas)) a.fights=[...new Set(a.trainers.map(id=>trainers[id].fight))];
 for (const f of FIGHTS) f.areaSlug=trainers[f.members[0]].areaSlug;
+// ---- Level caps (HoF rules, mechanics.md "## Level Caps": highest level on each gym leader's party)
+const CAPS={}; { const sec=md('mechanics.md').split(/^## Level Caps\s*$/m).pop().split('________________')[0];
+  for(const m of sec.matchAll(/^([A-Za-z#0-9 \/]+):\s*Lv\.\s*(\d+)/gm)) CAPS[clean(m[1])]=+m[2]; }
+const splitCap={Roark:'Roark',Gardenia:'Gardenia',Fantina:'Fantina',Maylene:'Maylene',Wake:'Wake',Byron:'Byron',Candice:'Candice',Volkner:'Volkner',Galactic:'Coronet/E4','Elite Four':'Coronet/E4'};
+for(const f of FIGHTS){ const t0=trainers[f.members[0]]; const k=splitCap[f.split]; if(k&&CAPS[k]!=null) f.cap={level:CAPS[k],label:`${k==='Coronet/E4'?'Coronet/E4':k+' split'} level cap`};
+  const bm=t0.name.match(/^Barry #(\d)/); if(bm&&CAPS['Barry #'+bm[1]]!=null) f.cap={level:CAPS['Barry #'+bm[1]],label:`Barry #${bm[1]} level cap (this fight only)`}; }
+for(const g of gyms){ const k=Object.keys(CAPS).find(c=>g.name.includes(c))||(/Elite Four/.test(g.name)?'Coronet/E4':null); if(k) g.cap=CAPS[k]; }
+console.log('level caps',JSON.stringify(CAPS));
 // ---- pChal (partial: 15 of 31 videos) — only from data/pchal-*.{csv,json,md}
 const PCH={}; {
   const rows=f=>{ const r=csv(f).filter(x=>x.some(c=>clean(c))); const H=r[0].map(clean); return r.slice(1).map(x=>Object.fromEntries(H.map((h,i)=>[h,clean(x[i])]))); };
@@ -306,6 +314,16 @@ const PCH={}; {
     const lv=[...new Set(r.fights.flatMap(fid=>FIGHTS[fid].members.flatMap(id=>trainers[id].team.filter(m=>baseSp(m.label)===r.sp).map(m=>num((m.label.match(/Lv\.?\s*(\d+)/i)||[])[1])))).filter(x=>x!=null))];
     if(lv.length&&!lv.includes(r.oppLevelN)){ r.sheetLevels=lv; conflicts.push(`${r.trainer}: ${r.opp} Lv${r.oppLevel} (sheet: Lv${lv.join('/')})`); } }
   unmatched.levelConflicts=conflicts;
+  // Optional level pacing file (pchal-level-pacing.csv). Absent -> nothing rendered.
+  PCH.pacing=[]; const pacingFile=path.join(REF,'data','pchal-level-pacing.csv');
+  if(fs.existsSync(pacingFile)){ for(const [i,r] of rows('pchal-level-pacing.csv').entries()){
+      const o={id:i,kind:(r.kind||'').toLowerCase(),name:r.name,location:r.location,min:num(r.rec_level_min),max:num(r.rec_level_max),basis:r.basis,confidence:(r.confidence||'').toLowerCase()||'unrated',notes:r.notes,fights:[],areas:[]};
+      if(o.kind==='route'){ o.areas=matchAreas([r.name,r.location].filter(Boolean).join(' / ')); for(const s of o.areas) (areas[s].pacing??=[]).push(i); }
+      else if(o.kind==='trainer'){ const nk=key(r.name); const lk=r.location&&slug(r.location);
+        o.fights=FIGHTS.filter(f=>(key(f.title).includes(nk)||f.members.some(id=>key(trainers[id].name).includes(nk)))&&(!lk||f.areaSlug===lk||key(f.area).includes(key(r.location)))).map(f=>f.id);
+        for(const fid of o.fights) (FIGHTS[fid].pacing??=[]).push(i); }
+      if(!o.areas.length&&!o.fights.length) unmatched.pacing=(unmatched.pacing||[]).concat(`${r.kind} ${r.name} @ ${r.location}`);
+      PCH.pacing.push(o); } }
   PCH.matchups=mrows; PCH.groups=Object.entries(groups).map(([g,rs])=>({trainer:rs[0].trainer,location:rs[0].location,rows:rs.map(r=>r.id),fights:rs[0].fights,slug:slug(g)}));
   PCH.meta={processed,total:vids.length};
   PCH.unmatched=unmatched;
