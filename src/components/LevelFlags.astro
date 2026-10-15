@@ -3,7 +3,12 @@
 import P from '../data/pchal.json';
 const { f = null, area = null } = Astro.props;
 const inherited = !!(f && !f.pacing && f.pacingArea);
-const pace = ((f ? (f.pacing || f.pacingArea) : area?.pacing) || []).map(i => P.pacing[i]);
+const rows0 = ((f ? (f.pacing || f.pacingArea) : area?.pacing) || []).map(i => P.pacing[i]);
+// merge all rows hitting this fight/area into one flag: combined min–max, all sources, highest confidence
+const RANK = { high: 3, medium: 2, low: 1, unrated: 0 }; const uniq = a => [...new Set(a.filter(Boolean))];
+const lv = rows0.flatMap(r => [r.min, r.max]).filter(x => x != null);
+const pace = rows0.length ? [{ min: Math.min(...lv), max: Math.max(...lv), confidence: rows0.map(r=>r.confidence).sort((x,y)=>(RANK[y]??0)-(RANK[x]??0))[0],
+  basis: uniq(rows0.map(r=>r.basis)).join('; '), source: uniq(rows0.map(r=>r.source)).join(', '), name: uniq(rows0.map(r=>r.name)).join(', '), n: rows0.length }] : [];
 const rng = r => r.min != null && r.max != null && r.min !== r.max ? `${r.min}–${r.max}` : `${r.min ?? r.max}`;
 const label = area ? 'Recommended team level on this route' : inherited ? 'Recommended level (area)' : 'Recommended level';
 ---
