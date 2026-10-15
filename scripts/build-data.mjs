@@ -1,6 +1,7 @@
 // Build-time loader: reads ONLY the reference dir and emits src/data/*.json
 import fs from 'node:fs'; import path from 'node:path'; import Papa from 'papaparse';
 const REF = process.env.KAIZO_REF || '/home/box/agent-data/workflows/platinum-kaizo-guide/reference';
+if (!fs.existsSync(path.join(REF,'data'))) { console.log(`[build-data] reference dir ${REF} not found; using committed src/data/*.json and public/search-index.json`); process.exit(0); }
 const OUT = new URL('../src/data/', import.meta.url).pathname; fs.mkdirSync(OUT,{recursive:true});
 const csv = f => Papa.parse(fs.readFileSync(path.join(REF,'data',f),'utf8'),{skipEmptyLines:false}).data;
 const md = f => fs.readFileSync(path.join(REF,f),'utf8');
