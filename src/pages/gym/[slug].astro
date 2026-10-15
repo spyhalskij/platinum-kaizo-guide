@@ -1,5 +1,5 @@
 ---
-import Base from '../../layouts/Base.astro'; import Fight from '../../components/Fight.astro'; import fights from '../../data/fights.json'; import PMatchups from '../../components/PMatchups.astro'; import PNote from '../../components/PNote.astro'; import SpeedNote from '../../components/SpeedNote.astro'; import { marked } from 'marked';
+import Base from '../../layouts/Base.astro'; import Fight from '../../components/Fight.astro'; import fights from '../../data/fights.json'; import PNote from '../../components/PNote.astro'; import SpeedNote from '../../components/SpeedNote.astro'; import { marked } from 'marked';
 import gyms from '../../data/gyms.json'; import trainers from '../../data/trainers.json'; import areas from '../../data/areas.json';
 export function getStaticPaths(){ return gyms.map(g=>({params:{slug:g.slug},props:{g}})); }
 const { g } = Astro.props; const b = import.meta.env.BASE_URL;
@@ -12,7 +12,6 @@ const gauntlet = fights.filter(f=>gymAreas.includes(f.area) && !leadF.includes(f
 <h2>Curated answers</h2>
 {g.answers.length ? g.answers.map(s => <div class="card md" set:html={marked.parse(s)} />) : <p class="mut">No curated gym answers for this fight in docs. Use the team below.</p>}
 <h2>Leader team</h2>{leadF.map(id => <Fight f={fights[id]} />)}
-{leadF.filter(id=>fights[id].pchal).map(id => <section class="card pchal" id="pchal"><h2 style="margin-top:0">pChal matchups: {fights[id].title} ({fights[id].pchal.length})</h2><PNote extra="Opponent levels are blank in the source." /><PMatchups ids={fights[id].pchal} /></section>)}
 {gauntlet.length > 0 && <><h2>Other trainers in the same area ({gauntlet.length})</h2>{gauntlet.map(f => <Fight f={f} />)}</>}
-<SpeedNote />
+{[...leadF.map(id=>fights[id]),...gauntlet].some(f=>f.pchal) && <><span id="pnote"></span><PNote /></>}<SpeedNote />
 </Base>

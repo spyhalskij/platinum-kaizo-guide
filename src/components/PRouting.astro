@@ -1,8 +1,0 @@
----
-import P from '../data/pchal.json'; import Rich from './Rich.astro'; import PVideo from './PVideo.astro';
-const { ids, showRoute = false } = Astro.props; const R = Object.fromEntries(P.routing.map(r=>[r.id,r]));
-const rows = ids.map(i=>R[i]).sort((a,b)=>(a.priority??99)-(b.priority??99));
----
-<div class="wrap"><table><thead><tr>{showRoute && <th>Route (as in source)</th>}<th>Priority</th><th>Target</th><th>Method</th><th>Hold / when</th><th>Repel manip</th><th>Notes</th><th>Video</th></tr></thead><tbody>
-{rows.map(r => <tr>{showRoute && <td>{r.route}</td>}<td>{r.priority != null ? <span class="tag">#{r.priority}</span> : <span class="mut">—</span>}</td><td><Rich s={r.target} /></td><td>{r.method}</td><td>{r.hold || <span class="mut">—</span>}</td><td>{r.repel || <span class="mut">—</span>}</td><td style="font-size:13px"><Rich s={r.notes} /></td><td><PVideo v={r.video} /></td></tr>)}
-</tbody></table></div>

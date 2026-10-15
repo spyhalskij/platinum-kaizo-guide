@@ -1,9 +1,0 @@
----
-import P from '../data/pchal.json'; import fights from '../data/fights.json'; import Rich from './Rich.astro'; import PVideo from './PVideo.astro';
-const { ids, showFight = false } = Astro.props; const b = import.meta.env.BASE_URL; const R = P.matchups;
----
-<div class="wrap"><table><thead><tr><th>Opponent mon</th><th>Lv</th><th>Moves / items (per pChal)</th><th>Answer</th><th>Why</th><th>Avoid</th><th>Confidence</th><th>Video</th>{showFight && <th>Site fight</th>}</tr></thead><tbody>
-{ids.map(i=>R[i]).map(r => <tr><td>{r.oppLink ? <a href={`${b}mon/${r.oppLink}/`}>{r.opp}</a> : r.opp}{r.oppNote && <div class="mut" style="font-size:12px">{r.oppNote}</div>}{r.onTeam === false && <div class="mut" style="font-size:12px">not on this team in the trainer sheet</div>}{r.sp === null && <div class="mut" style="font-size:12px">species not named in source</div>}</td><td>{r.oppLevel || <span class="mut">blank in source</span>}</td><td style="font-size:13px">{r.oppMoves}</td><td><Rich s={r.answer} /></td><td style="font-size:13px"><Rich s={r.why} /></td><td style="font-size:13px"><Rich s={r.avoid} /></td>
-<td><span class={`conf conf-${r.confidence}`}>{r.confidence === 'low' ? 'LOW confidence' : r.confidence}</span></td><td><PVideo v={r.video} /></td>
-{showFight && <td style="font-size:13px">{r.fights.length ? r.fights.map(id=><a href={`${b}trainer/${fights[id].slug}/`}>{fights[id].title}</a>) : <span class="mut">no match</span>}</td>}</tr>)}
-</tbody></table></div>

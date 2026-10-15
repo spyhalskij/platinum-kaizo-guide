@@ -1,17 +1,20 @@
 ---
-import Base from '../../layouts/Base.astro'; import Special from '../../components/Special.astro'; import PRouting from '../../components/PRouting.astro'; import PNote from '../../components/PNote.astro';
+import Base from '../../layouts/Base.astro'; import Special from '../../components/Special.astro'; import PNote from '../../components/PNote.astro'; import Rich from '../../components/Rich.astro'; import P from '../../data/pchal.json';
 import areas from '../../data/areas.json'; import spAll from '../../data/special.json';
 export function getStaticPaths(){ return areas.filter(a=>Object.keys(a.enc).length||(a.special||[]).length||a.pchal).map(a=>({params:{slug:a.slug},props:{a}})); }
 const { a } = Astro.props; const b = import.meta.env.BASE_URL;
-const enc = Object.entries(a.enc); const sp=(a.special||[]).map(i=>spAll[i]);
+const enc = Object.entries(a.enc); const R=Object.fromEntries(P.routing.map(r=>[r.id,r])); const prs=(a.pchal||[]).map(i=>R[i]).sort((x,y)=>(x.priority??99)-(y.priority??99));
+const isAvoid=r=>/^avoid/i.test(r.method); const badge=r=>isAvoid(r)?'avoid':r.priority!=null?`priority #${r.priority}`:'routing note'; const sp=(a.special||[]).map(i=>spAll[i]);
 const groups=[['Gifts',['Gift']],['Static encounters',['Static']],['Trades',['Trade']],['Honey trees',['Honey tree']],['Eggs',['Egg']],['Other (Game Corner, contests, store)',['Game Corner','Contest reward','Dept. Store']]].map(([h,ts])=>[h,sp.filter(s=>ts.includes(s.type))]).filter(([,l])=>l.length);
 ---
 <Base title={`${a.name} encounters`}><p class="mut"><a href={`${b}encounters/`}>Encounters</a> › {a.name} · <a href={`${b}route/${a.slug}/`}>area hub</a>{a.fights.length>0 && <> · <a href={`${b}trainers/${a.slug}/`}>{a.fights.length} trainer fights</a></>}</p>
-<h1>{a.name}: encounters</h1>
-{a.pchal && <section class="card pchal" id="pchal"><h2 style="margin-top:0">pChal priority ({a.pchal.length})</h2><PNote extra="No confidence column in the routing data." /><PRouting ids={a.pchal} /><p style="font-size:13px"><a href={`${b}pchal/priority/`}>All routes</a> · <a href={`${b}pchal/hold/`}>Hold checklist</a></p></section>}
+<h1>{a.name}: encounters</h1><p class="subnav"><a href={`${b}encounters/`}>All areas</a> · <a href={`${b}encounters/routing-tips/`}>Routing tips & hold checklist</a></p>
+{prs.length > 0 && <section class="card callout" id="priority"><h2 style="margin-top:0">Priority</h2><ul style="margin:.2rem 0;padding-left:1.1rem">
+{prs.map(r => <li><span class={isAvoid(r) ? 'prio avoid' : 'prio'}>{badge(r)}</span> <b>{r.target.length ? <Rich s={r.target} /> : <span class="mut">(no target)</span>}</b> · {r.method}{r.hold && <div class="prio-why">Hold / why: {r.hold}</div>}{r.repel && <div class="prio-why">Repel: {r.repel}</div>}{r.notes.length>0 && <div class="mut" style="font-size:12px"><Rich s={r.notes} /></div>}{r.marked.filter(x=>x.startsWith(a.slug+':')).length === 0 && <div class="mut" style="font-size:12px">Not in this area's wild tables (honey tree, fishing note or species not listed).</div>}</li>)}</ul>
+<p style="font-size:13px;margin:.3rem 0 0">More: <a href={`${b}encounters/routing-tips/`}>Routing tips & hold checklist</a></p><span id="pnote"></span><PNote /></section>}
 <h2>Wild encounters</h2>
 {enc.length ? <div class="grid">{enc.map(([m,list]) => <div class="card"><h3>{m}</h3><table><thead><tr><th>Pokémon</th><th>Rate</th><th>Lv</th></tr></thead><tbody>
-{list.map(e=> <tr><td>{e.slug?<a href={`${b}mon/${e.slug}/`}>{e.mon}</a>:e.mon}</td><td>{e.rate || <span class="mut">not in docs</span>}</td><td>{e.lvl}</td></tr>)}</tbody></table></div>)}</div>
+{list.map(e=> <tr class={e.prio ? 'prio-row' : ''}><td>{e.slug?<a href={`${b}mon/${e.slug}/`}>{e.mon}</a>:e.mon}{(e.prio||[]).map(i=>R[i]).map(r=><><span class={isAvoid(r)?'prio avoid':'prio'} title={[r.method,r.hold,r.repel].filter(Boolean).join(' · ')}>{badge(r)}</span>{r.hold && <div class="prio-why">{r.hold}</div>}{r.repel && <div class="prio-why">Repel: {r.repel}</div>}</>)}</td><td>{e.rate || <span class="mut">not in docs</span>}</td><td>{e.lvl}</td></tr>)}</tbody></table></div>)}</div>
 : <p class="mut">No wild encounters for this area in docs.</p>}
 {groups.map(([h,l])=><><h2>{h} ({l.length})</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">{l.map(s=><Special s={s} hideLoc />)}</div></>)}
 </Base>

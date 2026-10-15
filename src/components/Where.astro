@@ -1,0 +1,5 @@
+---
+import areas from '../data/areas.json';
+const { r } = Astro.props; const b = import.meta.env.BASE_URL; const an = Object.fromEntries(areas.map(a=>[a.slug,a.name]));
+---
+{r.areas.length ? r.areas.map((s,i)=><>{i>0 && ', '}<a href={`${b}encounters/${s}/#priority`}>{an[s]}</a></>) : <span class="mut">{r.route}</span>}

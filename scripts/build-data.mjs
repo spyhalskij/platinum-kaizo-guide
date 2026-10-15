@@ -242,7 +242,8 @@ const PCH={}; {
   const rows=f=>{ const r=csv(f).filter(x=>x.some(c=>clean(c))); const H=r[0].map(clean); return r.slice(1).map(x=>Object.fromEntries(H.map((h,i)=>[h,clean(x[i])]))); };
   const vids=JSON.parse(fs.readFileSync(path.join(REF,'data','pchal-videos.json'),'utf8')); const vById=Object.fromEntries(vids.map(v=>[v.id,v]));
   const processed=vids.filter(v=>v.processed).length;
-  const vid=(url,ts)=>{ if(!url) return null; const id=(url.match(/[?&]v=([\w-]+)/)||[])[1]; const label=(ts||'').replace(/^00:(?=\d\d:\d\d$)/,'').replace(/^0(?=\d:)/,'');
+  const vid=(url,ts)=>null; // video/timestamp links intentionally not published (Jack)
+  const _vidUnused=(url,ts)=>{ if(!url) return null; const id=(url.match(/[?&]v=([\w-]+)/)||[])[1]; const label=(ts||'').replace(/^00:(?=\d\d:\d\d$)/,'').replace(/^0(?=\d:)/,'');
     return {url,ts,label:ts?`pChal video @ ${label}`:'pChal video',title:vById[id]?.title||'',id}; };
   // mon-name linkifier (longest names first, whole words)
   const names=Object.values(mons).map(m=>({n:m.name,slug:m.slug})).filter(x=>x.n.length>2).sort((a,b)=>b.n.length-a.n.length);
@@ -262,6 +263,9 @@ const PCH={}; {
   const first=r=>r.areas.length?Math.min(...r.areas.map(s=>aIdx[s])):1e9;
   PCH.routing.sort((a,b)=>first(a)-first(b)||(a.priority??99)-(b.priority??99)||a.id-b.id);
   for(const r of PCH.routing) for(const s of r.areas) (areas[s].pchal??=[]).push(r.id);
+  // inline marks: encounter rows whose species is a target of a priority/routing row for that area
+  for(const r of PCH.routing){ const ts=new Set(r.target.filter(x=>x.slug).map(x=>x.slug)); r.marked=[];
+    for(const s of r.areas) for(const [meth,list] of Object.entries(areas[s].enc)) for(const e of list) if(e.slug&&ts.has(e.slug)){ (e.prio??=[]).includes(r.id)||e.prio.push(r.id); r.marked.push(s+':'+meth); } }
   // matchups -> fights: trainer keyword + (gym location) + opponent species on the team; rows in a (trainer,location) group share the best-matching fight(s)
   const baseSp=l=>key(clean(l.replace(/Lv\.?\s*\d+/i,'').replace(/[♂♀]/g,'')).split(/[-\s(]/)[0]);
   const teamSp=f=>new Set(f.members.flatMap(id=>trainers[id].team.map(m=>baseSp(m.label))));
@@ -285,7 +289,7 @@ const PCH={}; {
       else if(!r.onTeam) unmatched.names.push(`${r.trainer}: ${r.opp} is not on the matched team in the trainer sheet`);
       for(const fid of r.fights) (FIGHTS[fid].pchal??=[]).push(r.id); } }
   PCH.matchups=mrows; PCH.groups=Object.entries(groups).map(([g,rs])=>({trainer:rs[0].trainer,location:rs[0].location,rows:rs.map(r=>r.id),fights:rs[0].fights,slug:slug(g)}));
-  PCH.meta={processed,total:vids.length,videos:vids.map(v=>({id:v.id,title:v.title,url:v.url,processed:v.processed,type:v.type,channel:v.channel}))};
+  PCH.meta={processed,total:vids.length};
   PCH.unmatched=unmatched;
   console.log('pchal routing',PCH.routing.length,'matchups',mrows.length,'unmatched',JSON.stringify(unmatched));
 }
@@ -297,11 +301,9 @@ FIGHTS.forEach(f=>idx.push({t:'Trainer',n:f.title,u:`trainer/${f.slug}/`,d:`${f.
 const seenI=new Set(); itemsU.forEach(i=>{ if(seenI.has(key(i.name)))return; seenI.add(key(i.name)); idx.push({t:i.category==='TM'||i.category==='HM'?'TM':'Item',n:i.name,u:`items/?q=${encodeURIComponent(i.name)}`,d:i.move?`${i.move.type??''} ${i.move.cat??''}`.trim():i.category}); });
 special.forEach(sp=>idx.push({t:'Special',n:`${sp.mons.map(m=>m.name).join(', ')||sp.name||sp.type}`,u:`special-encounters/?q=${encodeURIComponent(sp.type)}#sp-${sp.id}`,d:`${sp.type}${sp.location?' · '+sp.location:''}${sp.phase?' · '+sp.phase:''}`}));
 order.forEach(s=>{const a=areas[s]; const ne=Object.values(a.enc).flat().length+(a.special||[]).length; if(ne) idx.push({t:'Encounters',n:a.name+' encounters',u:`encounters/${a.slug}/`,d:`${ne} wild/special`}); if(a.fights.length) idx.push({t:'Trainer',n:a.name+' trainers',u:`trainers/${a.slug}/`,d:`${a.fights.length} fights`});});
-idx.push({t:'pChal',n:'pChal encounter priority by route',u:'pchal/priority/',d:`${PCH.routing.length} rows · partial (${PCH.meta.processed}/${PCH.meta.total} videos)`});
-idx.push({t:'pChal',n:'pChal hold checklist',u:'pchal/hold/',d:'When to save a route encounter and why'});
-idx.push({t:'pChal',n:'pChal matchups by opponent',u:'pchal/matchups/',d:`${PCH.matchups.length} rows`});
-order.forEach(s=>{const a=areas[s]; if(a.pchal) idx.push({t:'pChal',n:a.name+' pChal priority',u:`encounters/${a.slug}/#pchal`,d:`${a.pchal.length} routing notes`});});
-PCH.groups.forEach(g=>idx.push({t:'pChal',n:`${g.trainer} pChal matchups`,u:`pchal/matchups/#${g.slug}`,d:`${g.location} · ${g.rows.length} rows`}));
+idx.push({t:'Encounters',n:'Encounter routing tips & tricks',u:'encounters/routing-tips/',d:'General rules, hold checklist, repel routing, priority by route (pChal, partial)'});
+idx.push({t:'Encounters',n:'Hold checklist (when to save an encounter)',u:'encounters/routing-tips/#hold',d:'pChal, partial'});
+order.forEach(s=>{const a=areas[s]; if(a.pchal) idx.push({t:'Encounters',n:a.name+' priority encounters',u:`encounters/${a.slug}/#priority`,d:`${a.pchal.length} routing notes (pChal)`});});
 gyms.forEach(g=>idx.push({t:'Gym',n:g.name,u:`gym/${g.slug}/`,d:`${g.fights.length} boss fights`}));
 
 write('mons',Object.values(mons).sort((a,b)=>a.id-b.id)); write('areas',order.map(s=>areas[s])); write('trainers',trainers); write('fights',FIGHTS); write('pchal',PCH);

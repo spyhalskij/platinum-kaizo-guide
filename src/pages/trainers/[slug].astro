@@ -1,5 +1,5 @@
 ---
-import Base from '../../layouts/Base.astro'; import Fight from '../../components/Fight.astro'; import SpeedNote from '../../components/SpeedNote.astro'; import OrderNote from '../../components/OrderNote.astro';
+import Base from '../../layouts/Base.astro'; import Fight from '../../components/Fight.astro'; import SpeedNote from '../../components/SpeedNote.astro'; import PNote from '../../components/PNote.astro'; import OrderNote from '../../components/OrderNote.astro';
 import areas from '../../data/areas.json'; import fights from '../../data/fights.json';
 export function getStaticPaths(){ return areas.filter(a=>a.fights.length).map(a=>({params:{slug:a.slug},props:{a}})); }
 const { a } = Astro.props; const b = import.meta.env.BASE_URL; const enc = Object.keys(a.enc).length||(a.special||[]).length;
@@ -7,4 +7,4 @@ const { a } = Astro.props; const b = import.meta.env.BASE_URL; const enc = Objec
 <Base title={`${a.name} trainers`}><p class="mut"><a href={`${b}trainers/`}>Trainers</a> › {a.name} · <a href={`${b}route/${a.slug}/`}>area hub</a>{enc>0 && <> · <a href={`${b}encounters/${a.slug}/`}>encounters</a></>}</p>
 <h1>{a.name}: trainers ({a.fights.length} fights)</h1>
 {a.fights.map(id => <Fight f={fights[id]} nav />)}
-<OrderNote /><SpeedNote /></Base>
+{a.fights.some(id=>fights[id].pchal) && <><span id="pnote"></span><PNote /></>}<OrderNote /><SpeedNote /></Base>

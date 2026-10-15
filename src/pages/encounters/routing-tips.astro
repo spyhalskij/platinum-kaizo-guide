@@ -1,0 +1,31 @@
+---
+import Base from '../../layouts/Base.astro'; import PNote from '../../components/PNote.astro'; import Rich from '../../components/Rich.astro'; import Where from '../../components/Where.astro';
+import P from '../../data/pchal.json'; import areas from '../../data/areas.json'; const b = import.meta.env.BASE_URL;
+const an = Object.fromEntries(areas.map(a=>[a.slug,a.name]));
+const general = P.routing.filter(r=>!r.areas.length);
+const hold = P.routing.filter(r=>r.hold);
+const repel = P.routing.filter(r=>r.repel || /repel/i.test(r.method));
+const byArea = areas.filter(a=>a.pchal);
+const R = Object.fromEntries(P.routing.map(r=>[r.id,r]));
+const isAvoid=r=>/^avoid/i.test(r.method);
+---
+<Base title="Encounter routing tips & tricks"><p class="mut"><a href={`${b}encounters/`}>Encounters</a> › Routing tips</p>
+<h1>Encounter routing tips & tricks</h1>
+<p class="subnav"><a href="#general">General rules</a> · <a href="#hold">Hold checklist</a> · <a href="#repel">Repel routing</a> · <a href="#by-route">Priority by route</a></p>
+
+<h2 id="general">General rules & tricks ({general.length})</h2>
+<div class="card callout"><ul style="padding-left:1.1rem;margin:.2rem 0">{general.map(r=><li style="margin:.4rem 0"><b>{r.route}</b>{r.target.length>0 && <> · <Rich s={r.target} /></>}{r.method && <> · {r.method}</>}{r.hold && <div class="prio-why">{r.hold}</div>}{r.repel && <div class="prio-why">Repel: {r.repel}</div>}{r.notes.length>0 && <div class="mut" style="font-size:13px"><Rich s={r.notes} /></div>}</li>)}</ul></div>
+
+<h2 id="hold">Hold checklist: when to save an encounter, and why ({hold.length})</h2>
+<p class="mut" style="font-size:13px">Route order (encounter sheet progression). General rules come last.</p>
+<div class="wrap card"><table><thead><tr><th>✓</th><th>Route</th><th>Target</th><th>Method</th><th>Hold until / why</th><th>Notes</th></tr></thead><tbody>
+{hold.map(r=><tr><td><input type="checkbox" style="width:auto" /></td><td><Where r={r} /></td><td><Rich s={r.target} /></td><td>{r.method}</td><td><b>{r.hold}</b></td><td style="font-size:13px"><Rich s={r.notes} /></td></tr>)}</tbody></table></div>
+<p class="mut" style="font-size:12px">Checkboxes are for your own tracking and aren't saved.</p>
+
+<h2 id="repel">Repel routing & lead manipulation ({repel.length})</h2>
+<div class="card callout"><ul style="padding-left:1.1rem;margin:.2rem 0">{repel.map(r=><li style="margin:.4rem 0"><b><Where r={r} /></b> · {r.method}{r.repel && <div class="prio-why">{r.repel}</div>}{r.hold && <div class="mut" style="font-size:13px">{r.hold}</div>}{r.notes.length>0 && <div class="mut" style="font-size:13px"><Rich s={r.notes} /></div>}</li>)}</ul></div>
+
+<h2 id="by-route">Priority by route</h2>
+<div class="wrap card"><table><thead><tr><th>Route</th><th>Notes (priority first)</th></tr></thead><tbody>
+{byArea.map(a=><tr><td><a href={`${b}encounters/${a.slug}/#priority`}>{a.name}</a></td><td>{a.pchal.map(i=>R[i]).sort((x,y)=>(x.priority??99)-(y.priority??99)).map(r=><div><span class={isAvoid(r)?'prio avoid':'prio'}>{isAvoid(r)?'avoid':r.priority!=null?`#${r.priority}`:'note'}</span> <Rich s={r.target} /> · {r.method}</div>)}</td></tr>)}</tbody></table></div>
+<span id="pnote"></span><PNote /></Base>

@@ -1,5 +1,4 @@
 ---
 import P from '../data/pchal.json';
-const { extra = '' } = Astro.props;
 ---
-<p class="mut" style="font-size:12px;margin:.2rem 0">Source: pChal's Platinum Kaizo videos, <b>partial</b>. Only {P.meta.processed} of {P.meta.total} videos have been processed (auto-captions, so names may be misheard). {extra}</p>
+<p class="mut" style="font-size:11px;margin:.6rem 0 0">Priority, routing and matchup notes come from pChal's Platinum Kaizo videos. That source is partial (only {P.meta.processed} of {P.meta.total} videos processed, from auto-captions), so treat these as tips, not complete coverage.</p>

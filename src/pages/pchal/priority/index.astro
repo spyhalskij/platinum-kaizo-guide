@@ -1,9 +1,0 @@
----
-import Base from '../../../layouts/Base.astro'; import PNote from '../../../components/PNote.astro'; import PRouting from '../../../components/PRouting.astro';
-import P from '../../../data/pchal.json'; import areas from '../../../data/areas.json'; const b = import.meta.env.BASE_URL;
-const list = areas.filter(a=>a.pchal); const general = P.routing.filter(r=>!r.areas.length).map(r=>r.id);
----
-<Base title="pChal encounter priority"><h1>pChal encounter priority by route</h1>
-<PNote extra="Routes are in progression order (encounter sheet order). The routing data has no confidence column. Priority is pChal's number where given (#1 = take first). Rows naming two places appear under each." />
-{list.map(a => <section class="card pchal"><h3 style="margin-top:0"><a href={`${b}encounters/${a.slug}/#pchal`}>{a.name}</a></h3><PRouting ids={a.pchal} showRoute /></section>)}
-<h2>General rules and rows not tied to one site area ({general.length})</h2><div class="card pchal"><PRouting ids={general} showRoute /></div></Base>
