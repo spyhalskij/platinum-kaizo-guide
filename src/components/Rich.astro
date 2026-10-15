@@ -1,0 +1,4 @@
+---
+const { s = [] } = Astro.props; const b = import.meta.env.BASE_URL;
+---
+{s.map(x => x.slug ? <a href={`${b}mon/${x.slug}/`}>{x.t}</a> : x.t)}

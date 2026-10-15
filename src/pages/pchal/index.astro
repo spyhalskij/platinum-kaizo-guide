@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro'; import PNote from '../../components/PNote.astro'; import P from '../../data/pchal.json'; const b = import.meta.env.BASE_URL;
+---
+<Base title="pChal routing & matchups"><h1>pChal: routing & matchups</h1><PNote />
+<div class="grid"><a class="card" href={`${b}pchal/priority/`}><b>Encounter priority by route</b><div class="mut">{P.routing.length} routing notes in progression order</div></a>
+<a class="card" href={`${b}pchal/hold/`}><b>Hold checklist</b><div class="mut">When to save a route's encounter and why</div></a>
+<a class="card" href={`${b}pchal/matchups/`}><b>Matchups by opponent</b><div class="mut">{P.matchups.length} rows with confidence</div></a></div>
+<h2>Videos ({P.meta.processed} processed / {P.meta.total} listed)</h2>
+<div class="wrap card"><table><thead><tr><th>Video</th><th>Channel</th><th>Type</th><th>Processed</th></tr></thead><tbody>
+{P.meta.videos.map(v=><tr><td><a href={v.url} target="_blank" rel="noopener">{v.title}</a></td><td>{v.channel}</td><td>{v.type}</td><td>{v.processed ? 'yes' : <span class="mut">no</span>}</td></tr>)}</tbody></table></div></Base>

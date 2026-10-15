@@ -1,0 +1,9 @@
+---
+import Base from '../../../layouts/Base.astro'; import PNote from '../../../components/PNote.astro'; import PMatchups from '../../../components/PMatchups.astro';
+import P from '../../../data/pchal.json'; import fights from '../../../data/fights.json'; const b = import.meta.env.BASE_URL;
+---
+<Base title="pChal matchups"><h1>pChal matchups by opponent</h1>
+<PNote extra="Opponent levels are blank in the source and are left blank. Confidence is pChal-extraction confidence (high/medium/LOW). Several runs were blind, so “avoid” records his own hindsight." />
+{P.groups.map(g => <section class="card pchal" id={g.slug}><h3 style="margin-top:0">{g.trainer} <span class="mut" style="font-weight:400">· {g.location}</span></h3>
+<p style="font-size:13px">Site fight: {g.fights.length ? g.fights.map(id=><a href={`${b}trainer/${fights[id].slug}/`}>{fights[id].title}</a>) : <span class="mut">no match</span>} <span class="mut">(matched by trainer name, location and the opponent species on the team)</span></p>
+<PMatchups ids={g.rows} /></section>)}</Base>
