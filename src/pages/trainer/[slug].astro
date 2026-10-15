@@ -1,0 +1,6 @@
+---
+import Base from '../../layouts/Base.astro'; import Trainer from '../../components/Trainer.astro'; import trainers from '../../data/trainers.json';
+export function getStaticPaths(){ return trainers.map(t=>({params:{slug:t.slug},props:{t}})); }
+const { t } = Astro.props;
+---
+<Base title={t.name}><h1>{t.name}</h1><Trainer t={t} link={false} /></Base>

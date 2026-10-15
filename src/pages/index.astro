@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro'; import gyms from '../data/gyms.json'; const b = import.meta.env.BASE_URL;
+---
+<Base title="Search">
+<h1>Platinum Kaizo run companion</h1>
+<input id="q" placeholder="Search Pokémon, routes, trainers, items, TMs, gyms…  (press / to focus)" autocomplete="off" autofocus>
+<div class="row" style="margin-top:.5rem" id="filters">{['All','Mon','Route','Trainer','Gym','Item','TM'].map(t=> <label style="flex:0 0 auto"><input type="radio" name="t" value={t} checked={t==='All'} style="width:auto"> {t}</label>)}</div>
+<div id="results" class="card" style="padding:0;display:none"></div>
+<h2>Quick links</h2>
+<div class="grid">{gyms.map(g => <a class="card" href={`${b}gym/${g.slug}/`}><b>{g.order}. {g.name}</b><div class="mut">{g.fights.length} boss fight(s)</div></a>)}</div>
+<div class="grid" style="margin-top:.6rem">
+<a class="card" href={`${b}routes/`}><b>Routes & areas</b><div class="mut">Encounters, trainers, items by area</div></a>
+<a class="card" href={`${b}items/`}><b>Items & TMs</b><div class="mut">Every pickup with location</div></a>
+<a class="card" href={`${b}types/`}><b>Gen 4 type chart</b><div class="mut">No Fairy. Filter by attack/defense</div></a>
+<a class="card" href={`${b}mons/`}><b>Pokémon</b><div class="mut">Kaizo stats, learnsets, locations</div></a></div>
+<script is:inline define:vars={{b}}>
+let idx=[];const q=document.getElementById('q'),out=document.getElementById('results');
+fetch(b+'search-index.json').then(r=>r.json()).then(d=>{idx=d;run()});
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[^a-z0-9 ]/g,'');
+function run(){const v=norm(q.value).trim();const t=document.querySelector('input[name=t]:checked').value;
+ if(!v){out.style.display='none';return}const terms=v.split(/\s+/);
+ const r=idx.filter(x=>(t==='All'||x.t===t)&&terms.every(w=>norm(x.n+' '+x.d).includes(w)))
+  .sort((a,c)=>(norm(c.n).startsWith(v)-norm(a.n).startsWith(v))||a.n.length-c.n.length).slice(0,60);
+ out.style.display='block';out.innerHTML=r.length?r.map(x=>`<a href="${b}${x.u}"><span>${x.n.replace(/</g,'&lt;')}</span><span class="mut">${x.t} · ${x.d}</span></a>`).join(''):'<div style="padding:.6rem" class="mut">No matches in docs</div>'}
+q.addEventListener('input',run);document.getElementById('filters').addEventListener('change',run);
+document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!==q){e.preventDefault();q.focus()}});
+</script>
+</Base>

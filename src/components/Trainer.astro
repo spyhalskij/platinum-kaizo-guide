@@ -1,0 +1,8 @@
+---
+const { t, link = true } = Astro.props; const b = import.meta.env.BASE_URL;
+---
+<div class="card"><h3>{link ? <a href={`${b}trainer/${t.slug}/`}>{t.name}</a> : t.name} <span class="mut" style="font-weight:400;font-size:13px">· {t.area} · {t.split} split</span></h3>
+{t.note && <p class="mut">{t.note}</p>}
+<div class="grid">{t.team.map(m => <div class="mon"><b>{m.slug ? <a href={`${b}mon/${m.slug}/`}>{m.label}</a> : m.label}</b>
+<div class="mut" style="font-size:13px">{[m.nature, m.ability, m.item].filter(Boolean).join(' · ') || 'not in docs'}</div>
+<div style="font-size:13px">{m.moves.length ? m.moves.join(' / ') : <span class="mut">moves not in docs</span>}</div></div>)}</div></div>

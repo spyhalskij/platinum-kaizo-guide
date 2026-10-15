@@ -1,0 +1,21 @@
+---
+import Base from '../../layouts/Base.astro'; import mons from '../../data/mons.json'; import tc from '../../data/typechart.json';
+export function getStaticPaths(){ return mons.map(m=>({params:{slug:m.slug},props:{m}})); }
+const { m } = Astro.props; const b = import.meta.env.BASE_URL;
+const f = s => String(s).replace(/\.0$/,'');
+const weak = tc.types.map(a=>[a, m.types.reduce((x,d)=>x*(tc.chart[a]?.[d] ?? 1),1)]).filter(([,v])=>v!==1).sort((x,y)=>y[1]-x[1]);
+---
+<Base title={m.name}><h1>{m.name} <span class="mut" style="font-size:1rem">#{m.id}</span></h1>
+<div>{m.types.map(t=><span class="tag">{t}</span>)}</div>
+<div class="grid" style="margin-top:.6rem">
+<div class="card"><h3>Base stats</h3><table><tbody>{Object.entries(m.stats).map(([k,v])=><tr><th>{k}</th><td>{f(v)}</td></tr>)}</tbody></table></div>
+<div class="card"><h3>Info</h3><p>Abilities: {m.abilities.join(' / ') || 'not in docs'}<br>Catch rate: {f(m.catchRate) || 'not in docs'}<br>Growth: {m.growth || 'not in docs'}{m.items.length>0 && <><br>Wild held: {m.items.join(', ')}</>}</p>
+<h3>Defensive matchups (Gen 4)</h3><p>{weak.map(([t,v])=><span class="tag" title={t}>{t} ×{v}</span>)}</p></div>
+<div class="card"><h3>Evolution</h3>
+{m.evoFrom.map(e=><div>From <a href={`${b}mon/${e.fromSlug}/`}>{e.from}</a>: {e.method}{e.req && ` (${e.req})`}</div>)}
+{m.evo.map(e=><div>→ {e.toSlug?<a href={`${b}mon/${e.toSlug}/`}>{e.to}</a>:e.to}: {e.method}{e.req && ` (${e.req})`}</div>)}
+{!m.evo.length && !m.evoFrom.length && <span class="mut">No evolution in docs.</span>}</div></div>
+<h2>Catch locations</h2>{m.locations.length ? <div class="card"><table><thead><tr><th>Area</th><th>Method</th></tr></thead><tbody>{m.locations.map(l=><tr><td><a href={`${b}route/${l.slug}/`}>{l.area}</a></td><td>{l.method}</td></tr>)}</tbody></table></div> : <p class="mut">No wild location in the encounter sheet (may be gift/trade/static; see docs).</p>}
+<div class="grid"><div class="card"><h3>Level-up learnset</h3>{m.levelUp.length? <table><tbody>{m.levelUp.map(([l,mv])=><tr><td>{l}</td><td>{mv}</td></tr>)}</tbody></table>:<span class="mut">not in docs</span>}</div>
+<div class="card"><h3>TM / HM compatibility ({m.tms.length})</h3>{m.tms.length? <table><tbody>{m.tms.map(([c,mv])=><tr><td>{c}</td><td>{mv}</td></tr>)}</tbody></table>:<span class="mut">not in docs</span>}</div></div>
+</Base>

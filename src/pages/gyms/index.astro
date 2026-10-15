@@ -1,0 +1,6 @@
+---
+import Base from '../../layouts/Base.astro'; import gyms from '../../data/gyms.json'; import ex from '../../data/gymExtras.json'; import { marked } from 'marked'; const b = import.meta.env.BASE_URL;
+---
+<Base title="Gyms"><h1>Gyms & major fights</h1>
+<div class="grid">{gyms.map(g => <a class="card" href={`${b}gym/${g.slug}/`}><b>{g.order}. {g.name}</b><div class="mut">{g.fights.length} fight(s) · {g.answers.length? 'curated notes':'no curated notes'}</div></a>)}</div>
+<div class="card md" set:html={marked.parse(ex.intro + '\n\n' + ex.wipes)} /></Base>

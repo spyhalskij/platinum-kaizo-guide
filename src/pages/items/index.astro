@@ -1,0 +1,21 @@
+---
+import Base from '../../layouts/Base.astro'; import items from '../../data/items.json'; const b = import.meta.env.BASE_URL;
+const cats = [...new Set(items.map(i=>i.category))];
+const eff = i => i.move ? [i.move.type, i.move.cat, i.move.power ? `${i.move.power} BP` : '', i.move.acc ? `${i.move.acc}% acc` : '', i.move.effect && i.move.effect!=='None' ? i.move.effect : ''].filter(Boolean).join(' · ')
+ : i.info ? [i.info.pocket && `Pocket: ${i.info.pocket}`, i.info.price ? `Price ₽${i.info.price}` : '', i.info.flingPower ? `Fling ${i.info.flingPower}` : ''].filter(Boolean).join(' · ') : '';
+---
+<Base title="Items & TMs"><h1>Items & TMs ({items.length} pickups)</h1>
+<p class="mut">From the item, TM, shard and heart-scale checklists. Item effect text is not in the docs. Shown instead: TM move data, bag pocket, price.</p>
+<div class="row"><input id="q" placeholder="Search item, location, requirement…"><select id="c"><option value="">All categories</option>{cats.map(c=><option>{c}</option>)}</select>
+<select id="r"><option value="">Any requirement</option><option value="none">No requirement</option><option value="some">Has requirement</option></select></div>
+<p class="mut" id="n"></p>
+<div class="wrap card"><table><thead><tr><th>Item</th><th>Area</th><th>Where</th><th>Requires</th><th>Details</th></tr></thead><tbody>
+{items.map(i=><tr data-c={i.category} data-r={i.req?'some':'none'} data-s={[i.name,i.area,i.loc,i.req,i.move?.name].join(' ').toLowerCase()}>
+<td><b>{i.name}</b>{i.qty && ` ×${i.qty}`} <span class="tag">{i.category}</span></td><td>{i.area?<a href={`${b}route/${i.areaSlug}/`}>{i.area}</a>:'—'}</td><td>{i.loc||'not in docs'}</td><td>{i.req||'—'}</td><td class="mut">{eff(i)||'not in docs'}</td></tr>)}
+</tbody></table></div>
+<script is:inline>
+const q=document.getElementById('q'),c=document.getElementById('c'),r=document.getElementById('r'),rows=[...document.querySelectorAll('tr[data-s]')];
+q.value=new URLSearchParams(location.search).get('q')||'';
+function f(){const w=q.value.toLowerCase().split(/\s+/).filter(Boolean);let n=0;rows.forEach(x=>{const ok=(!c.value||x.dataset.c===c.value)&&(!r.value||x.dataset.r===r.value)&&w.every(t=>x.dataset.s.includes(t));x.hidden=!ok;n+=ok});document.getElementById('n').textContent=n+' shown'}
+[q,c,r].forEach(e=>e.oninput=f);f();
+</script></Base>

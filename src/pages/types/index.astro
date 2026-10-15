@@ -1,0 +1,21 @@
+---
+import Base from '../../layouts/Base.astro'; import tc from '../../data/typechart.json'; import { marked } from 'marked';
+const { types, chart } = tc; const v = (a,d) => chart[a]?.[d] ?? 1;
+---
+<Base title="Type chart"><h1>Gen 4 type chart</h1><p class="mut">No Fairy type. Rows = attacking, columns = defending. Dual types multiply.</p>
+<div class="row"><label>Attacking type<select id="atk"><option value="">All</option>{types.map(t=><option>{t}</option>)}</select></label>
+<label>Defending type<select id="def"><option value="">All</option>{types.map(t=><option>{t}</option>)}</select></label>
+<label>Second defending type<select id="def2"><option value="">None</option>{types.map(t=><option>{t}</option>)}</select></label></div>
+<div id="dual" class="card" hidden></div>
+<div class="wrap card"><table class="tc"><thead><tr><th>Atk ↓ / Def →</th>{types.map(d=><th data-d={d}>{d.slice(0,3)}</th>)}</tr></thead><tbody>
+{types.map(a=><tr data-a={a}><th>{a}</th>{types.map(d=>{const x=v(a,d);return <td data-d={d} class={x===2?'x2':x===0.5?'x05':x===0?'x0':''}>{x===1?'':x===0.5?'½':x}</td>})}</tr>)}</tbody></table></div>
+<div class="card md" set:html={marked.parse('## Common traps' + tc.notes)} />
+<script is:inline define:vars={{chart,types}}>
+const g=id=>document.getElementById(id);
+function upd(){const a=g('atk').value,d=g('def').value,d2=g('def2').value;
+document.querySelectorAll('tr[data-a]').forEach(r=>r.hidden=a&&r.dataset.a!==a);
+document.querySelectorAll('[data-d]').forEach(c=>c.hidden=d&&!d2&&c.dataset.d!==d);
+const box=g('dual');if(d){const ds=[d,d2].filter(Boolean);const rows=types.map(t=>[t,ds.reduce((x,y)=>x*(chart[t]?.[y]??1),1)]).filter(([,x])=>x!==1).sort((x,y)=>y[1]-x[1]);
+box.hidden=false;box.innerHTML='<b>Into '+ds.join('/')+':</b> '+rows.map(([t,x])=>'<span class="tag">'+t+' ×'+x+'</span>').join('')}else box.hidden=true}
+['atk','def','def2'].forEach(i=>g(i).onchange=upd);
+</script></Base>
