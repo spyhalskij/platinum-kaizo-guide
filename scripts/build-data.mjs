@@ -268,6 +268,11 @@ const PCH={}; {
   const oppSp=o=>{ const m=clean(o.replace(/\(.*?\)/g,'')); return m&&M(m)?key(M(m).name).replace(/[^a-z0-9]/g,''):null; };
   const kw=t=>/clown/i.test(t)?'Clown':/gym trainer/i.test(t)?'':t.split(' ')[0];
   const mrows=rows('pchal-matchups.csv').map((r,i)=>({id:i,trainer:r.trainer,location:r.location,opp:r.opp_mon,oppLevel:r.opp_level,oppMoves:r.opp_moves_items,answer:linkify(r.answer_mon),why:linkify(r.why),avoid:linkify(r.avoid),confidence:(r.confidence||'').toLowerCase()||'unrated',video:vid(r.video_url,r.timestamp),sp:oppSp(r.opp_mon)}));
+  // Explicit override: per Jack (2026-10-15), Mars's mon in this row is Gabite; the pChal caption said "Gible". Source CSV left unchanged.
+  const MATCHUP_OPP_FIX=[{trainer:'Mars',location:'Valley Windworks',from:'Gible',to:'Gabite',note:'Source caption said “Gible”; corrected to Gabite per Jack'}];
+  for (const fx of MATCHUP_OPP_FIX){ const r=mrows.find(r=>r.trainer===fx.trainer&&r.location===fx.location&&r.opp===fx.from); if(!r) throw new Error('MATCHUP_OPP_FIX not matched: '+fx.from);
+    r.opp=fx.to; r.sp=oppSp(fx.to); r.oppNote=fx.note; }
+  mrows.forEach(r=>{ const m=M(clean(r.opp.replace(/\(.*?\)/g,''))); r.oppLink=m?m.slug:null; });
   const groups={}; mrows.forEach(r=>(groups[r.trainer+'|'+r.location.split(' (')[0]]??=[]).push(r));
   const GYMAREA=l=>{ const m=l.match(/^(\w+) Gym/); return m?m[1]:null; };
   for(const [g,rs] of Object.entries(groups)){ const r0=rs[0]; const k=kw(r0.trainer), ga=GYMAREA(r0.location), loc=r0.location.split(' (')[0];
